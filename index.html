@@ -353,8 +353,10 @@ function fmtPct(p){if(p==null)return'—';const v=+p;return isNaN(v)?'—':(v>=0
 function fmtScore(h){return Math.round(h);}
 function fmtPrice(price,key){
   if(price==null)return'—';
-  if(['BTC','ETH','SOL','XRP'].includes(key)&&price>1000)return(+price).toLocaleString('fr-FR',{maximumFractionDigits:0})+' $';
-  return(+price).toFixed(2)+(['BTC','ETH','SOL','XRP'].includes(key)?' $':'');
+  const isCrypto=['BTC','ETH','SOL','XRP'].includes(key);
+  if(isCrypto&&price>1000)return(+price).toLocaleString('fr-FR',{maximumFractionDigits:0})+' $';
+  if(isCrypto)return(+price).toFixed(4)+' $';
+  return(+price).toFixed(2);
 }
 function nowStr(){return new Date().toLocaleString('fr-FR');}
 
@@ -547,7 +549,7 @@ function computeRadarVolatilite(){
     const d=DATA[k];if(!d?.ok)return null;
     const{score,alerts,blocked}=scoreAsset(d);
     const sig=blocked?(d._p5!=null&&d._p5<-8?'VENTE':'NEUTRE'):(score>=60?'ACHAT':score<=42?'VENTE':'NEUTRE');
-    const nbCrit=alerts.filter(a=>a.startsWith('🚨')).length;
+    const nbCrit=alerts.filter(a=>a.msg?.startsWith('🚨')).length;
     return{key:k,label:d.label,pct:d.pct,vol:d._vol,p5:d._p5,score,sig:nbCrit>=1?'DANGER':sig,alerts};
   }).filter(Boolean).sort((a,b)=>(b.vol||0)-(a.vol||0)).slice(0,4);
 }
@@ -641,12 +643,12 @@ function trBadges(key){
 }
 
 const recoMap={
-  semi:{ACHAT:'Semi-conducteurs en tendance haussière. 3SEM (×3) possible si score > 70 avec stop -7%.',VENTE:'Pression baissière sur les semi. Rester à l'écart ou couvrir.',DANGER:'Signal neutralisé. Aucune position recommandée.',NEUTRE:'Attendre un signal clair. Surveiller NVDA et TSMC.'},
-  nasdaq:{ACHAT:'Nasdaq favorable. QQQ ou PUST (PEA) selon profil. Stop suggéré : -5%.',VENTE:'Teknieuwe pression. QQQ en baisse — attendre.',DANGER:'⚠ Conditions extrêmes. Ne pas intervenir.',NEUTRE:'Momentum incertain. Biais neutre.'},
-  europe:{ACHAT:'Europe en forme. Airbus et TotalEnergies en tête.',VENTE:'CAC/DAX sous pression. Liquidité réduite.',DANGER:'Alerte europe. Ne pas initier de position.',NEUTRE:'BCE accommodante mais croissance molle.'},
-  petrole:{ACHAT:'WTI bien orienté. XOM/CVX en momentum positif.',VENTE:'Pétrole en baisse. OPEC incertain.',DANGER:'Géopolitique ou chute abrupte — éviter.',NEUTRE:'Attendre confirmation OPEC / USD.'},
-  or:{ACHAT:'Or en refuge. GLD solide. Corrélation inverse USD.',VENTE:'Prise de profit possible sur or.',DANGER:'Volatilité or élevée — prudence.',NEUTRE:'Consolidation. Surveiller les taux réels.'},
-  crypto:{ACHAT:'Crypto haussier. BTC/ETH momentum positif.',VENTE:'Marché baissier crypto. Attention levier.',DANGER:'Krach crypto probable. Stop immédiat recommandé.',NEUTRE:'Volatilité ×3 vs actions. Biais neutre.'},
+  semi:{ACHAT:"Semi-conducteurs en tendance haussière. 3SEM (×3) possible si score > 70 avec stop -7%.",VENTE:"Pression baissière sur les semi. Rester à l'écart ou couvrir.",DANGER:"Signal neutralisé. Aucune position recommandée.",NEUTRE:"Attendre un signal clair. Surveiller NVDA et TSMC."},
+  nasdaq:{ACHAT:"Nasdaq favorable. QQQ ou PUST (PEA) selon profil. Stop suggéré : -5%.",VENTE:"Pression vendeuse. QQQ en baisse — attendre.",DANGER:"⚠ Conditions extrêmes. Ne pas intervenir.",NEUTRE:"Momentum incertain. Biais neutre."},
+  europe:{ACHAT:"Europe en forme. Airbus et TotalEnergies en tête.",VENTE:"CAC/DAX sous pression. Liquidité réduite.",DANGER:"Alerte europe. Ne pas initier de position.",NEUTRE:"BCE accommodante mais croissance molle."},
+  petrole:{ACHAT:"WTI bien orienté. XOM/CVX en momentum positif.",VENTE:"Pétrole en baisse. OPEC incertain.",DANGER:"Géopolitique ou chute abrupte — éviter.",NEUTRE:"Attendre confirmation OPEC / USD."},
+  or:{ACHAT:"Or en refuge. GLD solide. Corrélation inverse USD.",VENTE:"Prise de profit possible sur or.",DANGER:"Volatilité or élevée — prudence.",NEUTRE:"Consolidation. Surveiller les taux réels."},
+  crypto:{ACHAT:"Crypto haussier. BTC/ETH momentum positif.",VENTE:"Marché baissier crypto. Attention levier.",DANGER:"Krach crypto probable. Stop immédiat recommandé.",NEUTRE:"Volatilité ×3 vs actions. Biais neutre."},
 };
 
 function step(p,t){document.getElementById('lf').style.width=p+'%';document.getElementById('lt').textContent=t;return new Promise(r=>setTimeout(r,80));}
@@ -661,7 +663,7 @@ async function analyserTout(){
 
   try{
     await step(5,'Quotes temps réel…');
-    const [,rawNews]=await Promise.all([fetchCrypto().catch(()=>{}),fetchNews().catch(()=>[]),fetchStocks().catch(()=>{})]);
+    const [rawNews]=await Promise.all([fetchNews().catch(()=>[]),fetchStocks().catch(()=>{}),fetchCrypto().catch(()=>{})]);
 
     await step(65,'RSI · 5j · 20j · volatilité…');
     const hh=loadHist();
@@ -708,7 +710,6 @@ async function analyserTout(){
 }
 
 function renderGlobal(signals,NEWS,ms){
-  const now=nowStr();
   const nbHist=Object.keys(DATA).filter(k=>DATA[k]?.closes?.length>1).length;
   const nbTotal=Object.keys(DATA).length;
 
@@ -844,7 +845,7 @@ function toggleMC(key){
         const top=mc.getBoundingClientRect().top+window.scrollY-24;
         window.scrollTo({top,behavior:'smooth'});
       });
-    },was?0:80);
+    },80);
   }
 }
 
