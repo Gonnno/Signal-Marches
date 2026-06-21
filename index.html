@@ -197,30 +197,9 @@ a{color:inherit;text-decoration:none;}
 .radar-item-vol{font:600 13px/1 'IBM Plex Mono',monospace;margin-bottom:.2rem;}
 .radar-item-sub{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
 
-/* ── Portfolio page ── */
-.port-form{background:var(--sur);border:1px solid var(--brd);border-radius:11px;padding:.9rem 1rem;margin-bottom:1rem;}
-.port-form-title{font:700 13px/1 'Space Grotesk',sans-serif;margin-bottom:.8rem;}
-.port-row{display:grid;grid-template-columns:1fr 90px 90px auto;gap:7px;margin-bottom:.5rem;align-items:center;}
-.port-input{background:var(--sur2);border:1px solid var(--brd);color:var(--tx);font:400 11px/1 'IBM Plex Mono',monospace;border-radius:6px;padding:6px 9px;width:100%;}
-.port-input::placeholder{color:var(--tx3);}
-.port-input:focus{outline:none;border-color:var(--ac);}
-.port-add-btn{background:var(--ac);color:#fff;border:none;border-radius:6px;padding:6px 12px;font:600 11px/1 'Space Grotesk',sans-serif;cursor:pointer;}
-.port-add-btn:hover{background:var(--ac2);color:#0d0d14;}
-.port-list{background:var(--sur);border:1px solid var(--brd);border-radius:11px;overflow:hidden;margin-bottom:1rem;}
-.port-list-head{display:grid;grid-template-columns:1fr 80px 80px 80px 80px 30px;gap:5px;padding:.6rem .9rem;border-bottom:1px solid var(--brd);font:500 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;}
-.port-list-head span{text-align:right;}
-.port-list-head span:first-child{text-align:left;}
-.port-list-row{display:grid;grid-template-columns:1fr 80px 80px 80px 80px 30px;gap:5px;padding:.6rem .9rem;border-bottom:1px solid rgba(255,255,255,.03);align-items:center;}
-.port-list-row:last-child{border-bottom:none;}
-.port-list-row span{font:400 11px/1 'IBM Plex Mono',monospace;text-align:right;}
-.port-list-row span:first-child{font:600 12px/1 'Space Grotesk',sans-serif;text-align:left;color:var(--tx2);}
-.port-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px;}
-.port-del:hover{color:var(--rd);}
-.port-summary{background:var(--sur2);border-radius:9px;padding:.8rem 1rem;display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
-.port-sum-item{text-align:center;}
-.port-sum-val{font:700 18px/1 'IBM Plex Mono',monospace;display:block;margin-bottom:3px;}
-.port-sum-lbl{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
-.port-empty{font:400 11px/1.5 'IBM Plex Mono',monospace;color:var(--tx3);padding:1.5rem;text-align:center;}
+/* ── Refresh button ── */
+.btn-refresh{background:var(--ac);color:#fff;border:none;border-radius:8px;padding:.65rem;width:100%;font:600 12px/1 'Space Grotesk',sans-serif;cursor:pointer;margin-top:.5rem;}
+.btn-refresh:hover{background:var(--ac2);color:#0d0d14;}
 
 /* ── Sentiment bar ── */
 .sent-bar-wrap{margin-bottom:1rem;background:var(--sur);border:1px solid var(--brd);border-radius:11px;padding:.9rem 1rem;}
@@ -236,22 +215,24 @@ a{color:inherit;text-decoration:none;}
 /* ── Footer ── */
 .footer{padding:.8rem 1.2rem;border-top:1px solid var(--brd);font:400 9px/1.7 'IBM Plex Mono',monospace;color:var(--tx3);}
 
+/* ── Desktop ── */
+@media(min-width:681px){
+  .content-inner{max-width:960px;margin:0 auto;}
+  .mkt-grid{grid-template-columns:1fr 1fr;}
+  /* vedette, fg, safety, sum-card span full width */
+  .vedette,.fg-widget,.safety-note,.sum-card,.btn-refresh,.ldr-wrap{grid-column:1/-1;}
+}
 /* ── Mobile ── */
 @media(max-width:680px){
   .sidebar{transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}
   .main{margin-left:0;}
   .menu-toggle{display:block;}
   .topbar-title{font-size:12px;}
-  .port-row{grid-template-columns:1fr 70px 70px auto;}
-  .port-list-head,.port-list-row{grid-template-columns:1fr 60px 60px 60px 30px;}
-  .port-list-head span:nth-child(4),.port-list-row span:nth-child(4){display:none;}
   .mc-schedule{display:none;}
   .spark-hdr,.spark-row{grid-template-columns:1fr 44px 44px 44px 70px;}
 }
 @media(max-width:420px){
   .pred-horizons{grid-template-columns:1fr;}
-  .port-row{grid-template-columns:1fr 70px auto;}
-  .port-input.qty{display:none;}
 }
 </style>
 </head>
@@ -267,8 +248,7 @@ a{color:inherit;text-decoration:none;}
       <div class="sb-section">Marchés</div>
       <div class="sb-item active" onclick="gotoPage('global',this)"><span class="sb-icon">🌐</span> Vue globale</div>
       <div class="sb-item" onclick="gotoPage('prediction',this)"><span class="sb-icon">🔮</span> Prédiction</div>
-      <div class="sb-section">Personnel</div>
-      <div class="sb-item" onclick="gotoPage('portfolio',this)"><span class="sb-icon">💼</span> Portefeuille</div>
+
     </nav>
     <div class="sb-status">
       <div><span class="sb-status-dot" id="live-dot"></span><span class="sb-status-txt" id="live-txt">En attente...</span></div>
@@ -297,7 +277,7 @@ a{color:inherit;text-decoration:none;}
       </button>
     </div>
 
-    <div class="content">
+    <div class="content"><div class="content-inner">
       <!-- PAGE: GLOBAL -->
       <div class="page active" id="page-global">
         <div class="ldr-wrap" id="ldr" style="display:none;">
@@ -309,25 +289,10 @@ a{color:inherit;text-decoration:none;}
 
       <!-- PAGE: PREDICTION -->
       <div class="page" id="page-prediction">
-        <div id="sec-prediction"><div class="port-empty">Lancez une analyse pour voir les prédictions.</div></div>
+        <div id="sec-prediction"><div style="font:400 11px/1.5 'IBM Plex Mono',monospace;color:var(--tx3);padding:1.5rem;text-align:center;">Lancez une analyse pour voir les prédictions.</div></div>
       </div>
 
-      <!-- PAGE: PORTFOLIO -->
-      <div class="page" id="page-portfolio">
-        <div class="port-form">
-          <div class="port-form-title">💼 Suivi de portefeuille</div>
-          <div class="port-row">
-            <input class="port-input" id="p-ticker" placeholder="Ticker (ex: NVDA, BTC)">
-            <input class="port-input qty" id="p-qty" placeholder="Qté" type="number" min="0" step="any">
-            <input class="port-input" id="p-price" placeholder="PRU ($)" type="number" min="0" step="any">
-            <button class="port-add-btn" onclick="addPosition()">+ Ajouter</button>
-          </div>
-          <div style="font:400 9px/1.5 'IBM Plex Mono',monospace;color:var(--tx3);">Tickers supportés : NVDA, AMD, MSFT, AAPL, META, GOOG, ASML, QQQ, GLD, BTC, ETH, SOL, XRP…</div>
-        </div>
-        <div id="port-list-wrap"></div>
-        <div id="port-summary-wrap"></div>
-      </div>
-    </div>
+    </div></div>
 
     <div class="footer">
       ⚠ Informatif uniquement — pas un conseil en investissement. Risque très élevé sur produits à levier.<br>
@@ -705,7 +670,7 @@ async function analyserTout(){
   }catch(e){
     ldr.style.display='none';btn.disabled=false;
     liveDot.className='sb-status-dot';liveTxt.textContent='Erreur';
-    document.getElementById('sec-global').innerHTML=`<div class="alert-box">⚠ Erreur : ${e.message}<br>Vérifiez votre connexion et réessayez.</div><button class="port-add-btn" onclick="analyserTout()" style="margin-top:.8rem;width:auto;padding:.5rem 1rem;">↻ Réessayer</button>`;
+    document.getElementById('sec-global').innerHTML=`<div class="alert-box">⚠ Erreur : ${e.message}<br>Vérifiez votre connexion et réessayez.</div><button class="btn-refresh" onclick="analyserTout()" style="margin-top:.8rem;width:auto;padding:.5rem 1rem;">↻ Réessayer</button>`;
   }
 }
 
@@ -831,7 +796,7 @@ function renderGlobal(signals,NEWS,ms){
       <div class="sum-row">★ Vedette : <b style="color:var(--gr)">${vedette.icon} ${vedette.label}</b> · <span class="badge ${badgeCls(sv.sig)}" style="font-size:10px;padding:3px 8px;">${sv.sig}</span> · ${fmtScore(sv.H)}/100</div>
       <div class="sum-row" style="margin-top:.4rem;font-size:11px;">Fort : <span class="g">${best.icon} ${best.label} ${fmtScore(signals[best.key].H)}</span> · Faible : <span class="r">${worst.icon} ${worst.label} ${fmtScore(signals[worst.key].H)}</span></div>
     </div>
-    <button class="port-add-btn" onclick="analyserTout()" style="width:100%;border-radius:8px;padding:.65rem;">↻ Rafraîchir</button>`;
+    <button class="btn-refresh" onclick="analyserTout()">↻ Rafraîchir</button>`;
 }
 
 function toggleMC(key){
@@ -842,7 +807,7 @@ function toggleMC(key){
     setTimeout(()=>{
       mc.classList.add('open');
       requestAnimationFrame(()=>{
-        const top=mc.getBoundingClientRect().top+window.scrollY-24;
+        const top=mc.getBoundingClientRect().top+window.scrollY-8;
         window.scrollTo({top,behavior:'smooth'});
       });
     },80);
@@ -925,81 +890,9 @@ function renderPrediction(signals,NEWS){
     </div>`;
   }).join('');
 
-  document.getElementById('sec-prediction').innerHTML=`${sentHTML}${cards}<div class="info-box" style="margin-top:.5rem;">⚠ Estimations probabilistes — pas des garanties. Toujours utiliser un stop-loss.</div><button class="port-add-btn" onclick="analyserTout()" style="width:100%;border-radius:8px;padding:.65rem;margin-top:.8rem;">↻ Rafraîchir</button>`;
+  document.getElementById('sec-prediction').innerHTML=`${sentHTML}${cards}<div class="info-box" style="margin-top:.5rem;">⚠ Estimations probabilistes — pas des garanties. Toujours utiliser un stop-loss.</div><button class="btn-refresh" onclick="analyserTout()">↻ Rafraîchir</button>`;
 }
 
-/* ── Portfolio ── */
-const PORT_KEY='smv3_port';
-function loadPort(){try{const r=localStorage.getItem(PORT_KEY);return r?JSON.parse(r):[]}catch{return[]}}
-function savePort(p){try{localStorage.setItem(PORT_KEY,JSON.stringify(p))}catch{}}
-
-function addPosition(){
-  const ticker=document.getElementById('p-ticker').value.trim().toUpperCase();
-  const qty=parseFloat(document.getElementById('p-qty').value)||1;
-  const pru=parseFloat(document.getElementById('p-price').value)||0;
-  if(!ticker)return;
-  const port=loadPort();
-  const existing=port.find(p=>p.ticker===ticker);
-  if(existing){existing.qty+=qty;existing.pru=pru||existing.pru;}
-  else port.push({ticker,qty,pru});
-  savePort(port);
-  document.getElementById('p-ticker').value='';
-  document.getElementById('p-qty').value='';
-  document.getElementById('p-price').value='';
-  renderPortfolio();
-}
-
-function deletePosition(ticker){
-  const port=loadPort().filter(p=>p.ticker!==ticker);
-  savePort(port);renderPortfolio();
-}
-
-function renderPortfolio(){
-  const port=loadPort();
-  const wrap=document.getElementById('port-list-wrap');
-  const sumWrap=document.getElementById('port-summary-wrap');
-  if(!port.length){
-    wrap.innerHTML=`<div class="port-list"><div class="port-empty">Aucune position. Ajoutez un actif ci-dessus.</div></div>`;
-    sumWrap.innerHTML='';return;
-  }
-  let totalInvest=0,totalVal=0;
-  const rows=port.map(p=>{
-    const d=DATA[p.ticker]||null;
-    const currentPrice=d?.price||null;
-    const valeur=currentPrice?currentPrice*p.qty:null;
-    const invest=p.pru?p.pru*p.qty:null;
-    const plAbs=valeur&&invest?valeur-invest:null;
-    const plPct=plAbs&&invest?plAbs/invest*100:null;
-    if(valeur)totalVal+=valeur;
-    if(invest)totalInvest+=invest;
-    return`<div class="port-list-row">
-      <span>${p.ticker}<br><span style="font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);">${d?.label||''} · ${p.qty} unité(s)</span></span>
-      <span>${currentPrice?fmtPrice(currentPrice,p.ticker):'—'}</span>
-      <span>${p.pru?p.pru.toFixed(2)+' $':'—'}</span>
-      <span>${valeur?valeur.toFixed(0)+' $':'—'}</span>
-      <span class="${plPct!=null?pctCls(plPct):'dim'}">${plPct!=null?(plPct>=0?'+':'')+plPct.toFixed(2)+'%':'—'}</span>
-      <button class="port-del" onclick="deletePosition('${p.ticker}')">✕</button>
-    </div>`;
-  }).join('');
-
-  wrap.innerHTML=`<div class="port-list">
-    <div class="port-list-head"><span>Actif</span><span>Prix actuel</span><span>PRU</span><span>Valeur</span><span>P&L</span><span></span></div>
-    ${rows}
-  </div>`;
-
-  if(totalInvest>0||totalVal>0){
-    const pl=totalVal-totalInvest;
-    const plPct=totalInvest?pl/totalInvest*100:0;
-    sumWrap.innerHTML=`<div class="port-summary">
-      <div class="port-sum-item"><span class="port-sum-val">${totalInvest.toFixed(0)} $</span><span class="port-sum-lbl">Investi</span></div>
-      <div class="port-sum-item"><span class="port-sum-val">${totalVal.toFixed(0)} $</span><span class="port-sum-lbl">Valeur actuelle</span></div>
-      <div class="port-sum-item"><span class="port-sum-val ${pctCls(plPct)}">${pl>=0?'+':''}${plPct.toFixed(2)}%</span><span class="port-sum-lbl">P&L total</span></div>
-    </div>`;
-  }else sumWrap.innerHTML='';
-}
-
-// Init portfolio on load
-renderPortfolio();
 </script>
 </body>
 </html>
