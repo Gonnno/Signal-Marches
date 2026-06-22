@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d0d14;--bg2:#12121d;--sur:#17172a;--sur2:#1e1e35;--sur3:#252540;
-  --brd:rgba(255,255,255,0.07);--brd2:rgba(255,255,255,0.12);
+  --bg:#13131f;--bg2:#1a1a2e;--sur:#1f1f35;--sur2:#252540;--sur3:#2d2d50;
+  --brd:rgba(255,255,255,0.09);--brd2:rgba(255,255,255,0.15);
   --tx:#e8e8f5;--tx2:#8888b0;--tx3:#4a4a70;
   --gr:#39d98a;--gr-dim:rgba(57,217,138,0.12);
   --rd:#f0657a;--rd-dim:rgba(240,101,122,0.12);
@@ -18,7 +18,7 @@
   --sb:220px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--tx);font-family:'Space Grotesk',sans-serif;min-height:100vh;}
+body{background:var(--bg);color:var(--tx);font-family:'Space Grotesk',sans-serif;min-height:100vh;font-size:15px;}
 a{color:inherit;text-decoration:none;}
 
 /* ── Layout ── */
@@ -29,9 +29,9 @@ a{color:inherit;text-decoration:none;}
 /* ── Sidebar ── */
 .sb-logo{padding:1.25rem 1.1rem .9rem;border-bottom:1px solid var(--brd);}
 .sb-brand{font:700 13px/1 'Space Grotesk',sans-serif;letter-spacing:.02em;}
-.sb-version{font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:4px;}
+.sb-version{font:400 12px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:4px;}
 .sb-nav{padding:.6rem 0;flex:1;overflow-y:auto;}
-.sb-section{font:500 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;padding:.6rem 1.1rem .3rem;}
+.sb-section{font:500 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;padding:.6rem 1.1rem .3rem;}
 .sb-item{display:flex;align-items:center;gap:8px;padding:.55rem 1.1rem;cursor:pointer;transition:background .15s,color .15s;font:500 12px/1 'Space Grotesk',sans-serif;color:var(--tx2);border-left:2px solid transparent;}
 .sb-item:hover{background:var(--sur);color:var(--tx);}
 .sb-item.active{background:var(--sur);color:var(--ac2);border-left-color:var(--ac);}
@@ -39,56 +39,56 @@ a{color:inherit;text-decoration:none;}
 .sb-status{padding:.9rem 1.1rem;border-top:1px solid var(--brd);}
 .sb-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--tx3);margin-right:6px;vertical-align:middle;}
 .sb-dot.live{background:var(--gr);box-shadow:0 0 6px var(--gr);}
-.sb-stxt{font:400 10px/1.4 'IBM Plex Mono',monospace;color:var(--tx2);}
+.sb-stxt{font:400 12px/1.4 'IBM Plex Mono',monospace;color:var(--tx2);}
 .sb-refresh{margin-top:.5rem;}
-.sb-refresh select{width:100%;background:var(--sur);border:1px solid var(--brd);color:var(--tx2);font:400 10px/1 'IBM Plex Mono',monospace;border-radius:5px;padding:5px 7px;cursor:pointer;}
+.sb-refresh select{width:100%;background:var(--sur);border:1px solid var(--brd);color:var(--tx2);font:400 12px/1 'IBM Plex Mono',monospace;border-radius:5px;padding:5px 7px;cursor:pointer;}
 
 /* ── Topbar ── */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--brd);padding:.6rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;position:sticky;top:0;z-index:50;}
 .topbar-left{display:flex;align-items:center;gap:.8rem;}
-.topbar-title{font:700 14px/1 'Space Grotesk',sans-serif;}
-.topbar-time{font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
-.btn-analyze{padding:.5rem 1.1rem;background:var(--ac);color:#fff;border:none;border-radius:7px;font:600 12px/1 'Space Grotesk',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;flex-shrink:0;}
+.topbar-title{font:700 15px/1 'Space Grotesk',sans-serif;}
+.topbar-time{font:400 13px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
+.btn-analyze{padding:.5rem 1.1rem;background:var(--ac);color:#fff;border:none;border-radius:7px;font:600 13px/1 'Space Grotesk',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;flex-shrink:0;}
 .btn-analyze:hover{background:var(--ac2);color:#0d0d14;}
 .btn-analyze:disabled{opacity:.4;cursor:not-allowed;}
 .menu-toggle{display:none;background:none;border:1px solid var(--brd);color:var(--tx2);border-radius:5px;padding:5px 8px;cursor:pointer;font-size:16px;}
 
 /* ── Content ── */
-.content{padding:1.1rem 1.2rem;flex:1;}
-.content > .page > *:not(.ldr-wrap){max-width:820px;}
+.content{padding:1.2rem 1.5rem;flex:1;}
 .page{display:none;}
 .page.active{display:block;}
+.page-inner{max-width:820px;margin:0 auto;}
 
 /* ── Market cards ── */
-.mkt-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:1rem;max-width:820px;}
+.mkt-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:1rem;}
 
 /* ── Loading ── */
 .ldr-wrap{margin-bottom:1rem;background:var(--sur);border-radius:10px;padding:.9rem 1rem;}
 .ldr-bar{height:3px;background:var(--sur3);border-radius:2px;overflow:hidden;margin-bottom:.5rem;}
 .ldr-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--cyan));border-radius:2px;width:0;transition:width .4s ease;}
-.ldr-txt{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx2);}
+.ldr-txt{font:400 13px/1 'IBM Plex Mono',monospace;color:var(--tx2);}
 
 /* ── Fear & Greed ── */
 .fg-widget{background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:1rem;display:grid;grid-template-columns:86px 1fr;gap:1rem;align-items:center;}
 .fg-gauge{width:86px;height:56px;}
 .fg-gauge svg{width:100%;height:100%;}
 .fg-label{font:700 14px/1 'Space Grotesk',sans-serif;margin-bottom:.3rem;}
-.fg-desc{font:400 10px/1.6 'IBM Plex Mono',monospace;color:var(--tx2);}
+.fg-desc{font:400 12px/1.6 'IBM Plex Mono',monospace;color:var(--tx2);}
 
 /* ── Vedette ── */
 .vedette{background:linear-gradient(135deg,rgba(124,109,250,.13),rgba(57,217,138,.06));border:1px solid rgba(124,109,250,.28);border-radius:12px;padding:1rem 1.1rem;margin-bottom:1rem;position:relative;overflow:hidden;}
 .vedette::after{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(124,109,250,.1),transparent 70%);pointer-events:none;}
-.vedette-eyebrow{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem;}
+.vedette-eyebrow{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem;}
 .vedette-eyebrow::before{content:'★ ';color:var(--am);}
 .vedette-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;}
 .vedette-name{font:700 18px/1.1 'Space Grotesk',sans-serif;margin-bottom:.4rem;}
 .vedette-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:.5rem;}
-.vedette-badge{font:500 9px/1 'IBM Plex Mono',monospace;padding:3px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--tx2);}
+.vedette-badge{font:500 11px/1 'IBM Plex Mono',monospace;padding:3px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--tx2);}
 .vedette-score{text-align:right;flex-shrink:0;}
 .vedette-score-num{font:700 40px/1 'IBM Plex Mono',monospace;}
-.vedette-score-sub{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:3px;}
+.vedette-score-sub{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:3px;}
 .vedette-actifs{display:flex;flex-wrap:wrap;gap:4px;margin-top:.7rem;padding-top:.7rem;border-top:1px solid rgba(255,255,255,.06);}
-.vedette-actif{font:500 10px/1 'IBM Plex Mono',monospace;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);}
+.vedette-actif{font:500 12px/1 'IBM Plex Mono',monospace;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);}
 
 /* ── Market card ── */
 .mc{background:var(--sur);border:1px solid var(--brd);border-radius:11px;overflow:hidden;cursor:pointer;transition:border-color .2s;}
@@ -99,37 +99,37 @@ a{color:inherit;text-decoration:none;}
 .mc-dot{width:7px;height:7px;border-radius:50%;}
 .mc-dot.on{background:var(--gr);box-shadow:0 0 5px var(--gr);}
 .mc-dot.off{background:var(--tx3);}
-.mc-dlabel{font:600 8px/1 'IBM Plex Mono',monospace;letter-spacing:.04em;}
+.mc-dlabel{font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.04em;}
 .mc-dlabel.on{color:var(--gr);}
 .mc-dlabel.off{color:var(--tx3);}
-.mc-hor{font:400 8px/1.3 'IBM Plex Mono',monospace;color:var(--tx3);text-align:center;margin-top:1px;}
-.mc-label{font:600 12px/1.2 'Space Grotesk',sans-serif;color:var(--tx2);display:flex;align-items:center;gap:5px;}
-.mc-star-tag{font:600 8px/1 'IBM Plex Mono',monospace;color:var(--am);}
-.mc-sig{font:700 14px/1 'Space Grotesk',sans-serif;margin-top:3px;}
-.mc-sub{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:3px;}
+.mc-hor{font:400 10px/1.3 'IBM Plex Mono',monospace;color:var(--tx3);text-align:center;margin-top:1px;}
+.mc-label{font:600 13px/1.2 'Space Grotesk',sans-serif;color:var(--tx2);display:flex;align-items:center;gap:5px;}
+.mc-star-tag{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--am);}
+.mc-sig{font:700 16px/1 'Space Grotesk',sans-serif;margin-top:3px;}
+.mc-sub{font:400 13px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:3px;}
 .mc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
-.mc-arrow{font-size:9px;color:var(--tx3);transition:transform .25s;}
+.mc-arrow{font-size:11px;color:var(--tx3);transition:transform .25s;}
 .mc.open .mc-arrow{transform:rotate(180deg);}
 .mc-quotes-strip{display:flex;flex-wrap:wrap;gap:4px;padding:0 .85rem .55rem;border-bottom:1px solid var(--brd);}
-.mc-q{font:400 9px/1 'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;background:var(--sur2);}
+.mc-q{font:400 11px/1 'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;background:var(--sur2);}
 .mc-body{max-height:0;overflow:hidden;transition:max-height .35s ease;}
 .mc.open .mc-body{max-height:2000px;}
 .mc-body-inner{padding:.85rem;}
 
 /* ── Sparkline ── */
-.spark-hdr{font:500 8px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding-bottom:5px;border-bottom:1px solid var(--brd);display:grid;grid-template-columns:1fr 50px 50px 50px 72px;gap:3px;margin-bottom:2px;}
+.spark-hdr{font:500 12px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding-bottom:5px;border-bottom:1px solid var(--brd);display:grid;grid-template-columns:1fr 50px 50px 50px 72px;gap:3px;margin-bottom:2px;}
 .spark-hdr span{text-align:right;}
 .spark-hdr span:first-child{text-align:left;}
-.spark-row{display:grid;grid-template-columns:1fr 50px 50px 50px 72px;gap:3px;align-items:center;font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx2);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.spark-row{display:grid;grid-template-columns:1fr 50px 50px 50px 72px;gap:3px;align-items:center;font:400 12px/1 'IBM Plex Mono',monospace;color:var(--tx2);padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);}
 .spark-row:last-child{border-bottom:none;}
 .spark-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .spark-val{text-align:right;}
 .spark-svg{height:24px;width:70px;}
 .card2{background:var(--sur2);border-radius:9px;padding:.75rem .85rem;margin-bottom:.6rem;}
-.card2-title{font:500 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem;}
+.card2-title{font:500 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem;}
 
 /* ── Badges ── */
-.badge{font:600 11px/1 'IBM Plex Mono',monospace;padding:4px 10px;border-radius:5px;letter-spacing:.04em;}
+.badge{font:600 13px/1 'IBM Plex Mono',monospace;padding:4px 10px;border-radius:5px;letter-spacing:.04em;}
 .b-buy{background:var(--gr-dim);color:var(--gr);border:1px solid rgba(57,217,138,.25);}
 .b-sell{background:var(--rd-dim);color:var(--rd);border:1px solid rgba(240,101,122,.25);}
 .b-hold{background:var(--am-dim);color:var(--am);border:1px solid rgba(245,166,35,.25);}
@@ -138,13 +138,13 @@ a{color:inherit;text-decoration:none;}
 .g{color:var(--gr);}.r{color:var(--rd);}.a{color:var(--am);}.dim{color:var(--tx3);}
 
 /* ── Reco / boxes ── */
-.reco{font:400 11px/1.7 'IBM Plex Mono',monospace;color:var(--tx);background:var(--sur2);border-radius:7px;padding:.55rem .75rem;margin-top:.5rem;}
-.alert-box{margin-top:.5rem;font:400 10px/1.5 'IBM Plex Mono',monospace;color:var(--rd);background:var(--rd-dim);border-radius:6px;padding:.4rem .6rem;border:1px solid rgba(240,101,122,.2);}
-.warn-box{margin-top:.5rem;font:400 10px/1.5 'IBM Plex Mono',monospace;color:var(--am);background:var(--am-dim);border-radius:6px;padding:.4rem .6rem;border:1px solid rgba(245,166,35,.2);}
-.info-box{font:400 9px/1.6 'IBM Plex Mono',monospace;color:var(--tx3);padding:.45rem .65rem;border-radius:6px;background:var(--sur2);border-left:2px solid var(--ac);margin-top:.5rem;}
+.reco{font:400 13px/1.7 'IBM Plex Mono',monospace;color:var(--tx);background:var(--sur2);border-radius:7px;padding:.55rem .75rem;margin-top:.5rem;}
+.alert-box{margin-top:.5rem;font:400 12px/1.5 'IBM Plex Mono',monospace;color:var(--rd);background:var(--rd-dim);border-radius:6px;padding:.4rem .6rem;border:1px solid rgba(240,101,122,.2);}
+.warn-box{margin-top:.5rem;font:400 12px/1.5 'IBM Plex Mono',monospace;color:var(--am);background:var(--am-dim);border-radius:6px;padding:.4rem .6rem;border:1px solid rgba(245,166,35,.2);}
+.info-box{font:400 11px/1.6 'IBM Plex Mono',monospace;color:var(--tx3);padding:.45rem .65rem;border-radius:6px;background:var(--sur2);border-left:2px solid var(--ac);margin-top:.5rem;}
 .tr-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:.5rem;}
-.tr-badge{font:500 9px/1 'IBM Plex Mono',monospace;padding:3px 8px;border-radius:4px;background:var(--ac-dim);color:var(--ac2);border:1px solid rgba(124,109,250,.2);}
-.safety-note{font:400 9px/1.6 'IBM Plex Mono',monospace;color:var(--tx3);padding:.5rem .8rem;border-radius:7px;background:var(--sur2);border-left:2px solid var(--ac);margin-bottom:.8rem;}
+.tr-badge{font:500 11px/1 'IBM Plex Mono',monospace;padding:3px 8px;border-radius:4px;background:var(--ac-dim);color:var(--ac2);border:1px solid rgba(124,109,250,.2);}
+.safety-note{font:400 11px/1.6 'IBM Plex Mono',monospace;color:var(--tx3);padding:.5rem .8rem;border-radius:7px;background:var(--sur2);border-left:2px solid var(--ac);margin-bottom:.8rem;}
 
 /* ── Summary card ── */
 .sum-card{background:var(--sur);border:1px solid var(--brd);border-radius:11px;padding:.85rem 1rem;margin-bottom:.9rem;}
@@ -153,9 +153,9 @@ a{color:inherit;text-decoration:none;}
 /* ── Radar ── */
 .radar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-bottom:.6rem;}
 .radar-item{background:var(--sur2);border-radius:9px;padding:.65rem .75rem;}
-.radar-item-lbl{font:600 11px/1 'Space Grotesk',sans-serif;margin-bottom:.3rem;}
+.radar-item-lbl{font:600 13px/1 'Space Grotesk',sans-serif;margin-bottom:.3rem;}
 .radar-item-vol{font:600 13px/1 'IBM Plex Mono',monospace;margin-bottom:.2rem;}
-.radar-item-sub{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
+.radar-item-sub{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
 
 /* ── Prediction ── */
 .pred-card{background:var(--sur);border:1px solid var(--brd);border-radius:11px;padding:.85rem 1rem;margin-bottom:.8rem;}
@@ -163,11 +163,11 @@ a{color:inherit;text-decoration:none;}
 .pred-title{font:700 13px/1 'Space Grotesk',sans-serif;}
 .pred-horizons{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.65rem;}
 .pred-h{background:var(--sur2);border-radius:7px;padding:.4rem .55rem;text-align:center;}
-.pred-h-lbl{font:400 8px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-bottom:4px;}
-.pred-h-val{font:600 11px/1 'IBM Plex Mono',monospace;}
-.pred-concl{font:400 11px/1.7 'IBM Plex Mono',monospace;color:var(--tx);background:var(--sur2);border-radius:7px;padding:.55rem .75rem;margin-bottom:.45rem;}
+.pred-h-lbl{font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-bottom:4px;}
+.pred-h-val{font:600 13px/1 'IBM Plex Mono',monospace;}
+.pred-concl{font:400 13px/1.7 'IBM Plex Mono',monospace;color:var(--tx);background:var(--sur2);border-radius:7px;padding:.55rem .75rem;margin-bottom:.45rem;}
 .pred-concl b{color:var(--ac2);}
-.pred-grid{display:block;max-width:820px;}
+.pred-grid{display:block;}
 
 /* ── News ── */
 .news-item{border-left:2px solid var(--brd2);padding:.4rem .7rem;margin-bottom:.35rem;border-radius:0 6px 6px 0;display:block;transition:opacity .15s;}
@@ -175,9 +175,9 @@ a{color:inherit;text-decoration:none;}
 .news-item.bull{border-left-color:var(--gr);background:rgba(57,217,138,.03);}
 .news-item.bear{border-left-color:var(--rd);background:rgba(240,101,122,.03);}
 .news-item.neutral{border-left-color:var(--am);}
-.news-title{font:500 11px/1.4 'Space Grotesk',sans-serif;color:var(--tx);margin-bottom:2px;}
-.news-sum{font:400 10px/1.5 'IBM Plex Mono',monospace;color:var(--tx2);margin-bottom:3px;}
-.news-meta{font:400 9px/1 'IBM Plex Mono',monospace;color:var(--tx3);display:flex;gap:6px;}
+.news-title{font:500 13px/1.4 'Space Grotesk',sans-serif;color:var(--tx);margin-bottom:2px;}
+.news-sum{font:400 12px/1.5 'IBM Plex Mono',monospace;color:var(--tx2);margin-bottom:3px;}
+.news-meta{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);display:flex;gap:6px;}
 .news-link{color:var(--ac2);}
 
 /* ── Sent bar ── */
@@ -185,11 +185,11 @@ a{color:inherit;text-decoration:none;}
 .sent-bar-title{font:700 13px/1 'Space Grotesk',sans-serif;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;}
 .sent-bar-track{height:7px;background:var(--sur3);border-radius:4px;overflow:hidden;margin-bottom:.35rem;}
 .sent-bar-fill{height:100%;border-radius:4px;transition:width .5s ease;}
-.sent-bar-labels{display:flex;justify-content:space-between;font:400 8px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
-.sent-stats{display:flex;gap:.8rem;margin-top:.45rem;font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx2);flex-wrap:wrap;}
+.sent-bar-labels{display:flex;justify-content:space-between;font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
+.sent-stats{display:flex;gap:.8rem;margin-top:.45rem;font:400 12px/1 'IBM Plex Mono',monospace;color:var(--tx2);flex-wrap:wrap;}
 
 /* ── Footer ── */
-.footer{padding:.7rem 1.2rem;border-top:1px solid var(--brd);font:400 9px/1.7 'IBM Plex Mono',monospace;color:var(--tx3);}
+.footer{padding:.7rem 1.2rem;border-top:1px solid var(--brd);font:400 11px/1.7 'IBM Plex Mono',monospace;color:var(--tx3);}
 
 /* ── Mobile ── */
 @media(max-width:680px){
@@ -249,17 +249,17 @@ a{color:inherit;text-decoration:none;}
 
     <div class="content">
       <!-- PAGE: GLOBAL -->
-      <div class="page active" id="page-global">
+      <div class="page active" id="page-global"><div class="page-inner">
         <div class="ldr-wrap" id="ldr" style="display:none;">
           <div class="ldr-bar"><div class="ldr-fill" id="lf"></div></div>
           <div class="ldr-txt" id="lt">Initialisation…</div>
         </div>
         <div id="sec-global"></div>
-      </div>
+      </div></div>
       <!-- PAGE: PREDICTION -->
-      <div class="page" id="page-prediction">
-        <div id="sec-prediction"><div style="font:400 11px/1.5 'IBM Plex Mono',monospace;color:var(--tx3);padding:2rem;text-align:center;">Lancez une analyse pour voir les prédictions.</div></div>
-      </div>
+      <div class="page" id="page-prediction"><div class="page-inner">
+        <div id="sec-prediction"><div style="font:400 13px/1.5 'IBM Plex Mono',monospace;color:var(--tx3);padding:2rem;text-align:center;">Lancez une analyse pour voir les prédictions.</div></div>
+      </div></div>
     </div>
 
     <div class="footer">
@@ -317,16 +317,75 @@ async function fhQuote(sym){
 }
 
 const LS_KEY='smv3_hist';
+const LS_META='smv3_meta'; // tracks last candle fetch date per symbol
 function loadHist(){try{const r=localStorage.getItem(LS_KEY);return r?JSON.parse(r):{}}catch{return{}}}
 function saveHist(h){try{localStorage.setItem(LS_KEY,JSON.stringify(h))}catch{}}
+function loadMeta(){try{const r=localStorage.getItem(LS_META);return r?JSON.parse(r):{}}catch{return{}}}
+function saveMeta(m){try{localStorage.setItem(LS_META,JSON.stringify(m))}catch{}}
+
 function pushAndGet(h,k,price,prevClose){
   if(!price||isNaN(+price))return(h[k]||[]).map(e=>e.c);
   if(!h[k])h[k]=[];
-  if(!h[k].length&&prevClose&&!isNaN(+prevClose)){const yest=new Date(Date.now()-86400000).toISOString().slice(0,10);h[k].push({d:yest,c:+prevClose});}
+  if(!h[k].length&&prevClose&&!isNaN(+prevClose)){
+    const yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    h[k].push({d:yest,c:+prevClose});
+  }
   const today=new Date().toISOString().slice(0,10);
   if(!h[k].length||h[k].at(-1).d!==today)h[k].push({d:today,c:+price});
   if(h[k].length>60)h[k]=h[k].slice(-60);
   return h[k].map(e=>e.c);
+}
+
+// Merge candle data into local history (fills gaps, keeps manual points)
+function mergeCandles(h,k,candles){
+  if(!candles?.length)return;
+  if(!h[k])h[k]=[];
+  const existing=new Set(h[k].map(e=>e.d));
+  const toAdd=candles.filter(c=>!existing.has(c.d)&&c.c>0);
+  h[k]=[...h[k],...toAdd].sort((a,b)=>a.d.localeCompare(b.d));
+  if(h[k].length>60)h[k]=h[k].slice(-60);
+}
+
+// Fetch 60 days of daily candles from Finnhub — only if cache is stale
+async function fetchCandles(fhSym,localKey,h,meta){
+  const today=new Date().toISOString().slice(0,10);
+  const nPoints=h[localKey]?.length||0;
+  const lastFetch=meta[localKey]||'';
+  // Skip if already fetched today AND we have ≥30 points
+  if(lastFetch===today&&nPoints>=30)return;
+  try{
+    const to=Math.floor(Date.now()/1000);
+    const from=to-60*86400;
+    const r=await fetchT(fhUrl(`/stock/candle?symbol=${fhSym}&resolution=D&from=${from}&to=${to}`),8000);
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.s!=='ok'||!d.t?.length)return;
+    const candles=d.t.map((ts,i)=>({
+      d:new Date(ts*1000).toISOString().slice(0,10),
+      c:d.c[i],
+    }));
+    mergeCandles(h,localKey,candles);
+    meta[localKey]=today;
+  }catch{}
+}
+
+// Fetch crypto candles from Binance (1d klines)
+async function fetchCryptoCandles(binanceSym,localKey,h,meta){
+  const today=new Date().toISOString().slice(0,10);
+  const nPoints=h[localKey]?.length||0;
+  const lastFetch=meta[localKey]||'';
+  if(lastFetch===today&&nPoints>=30)return;
+  try{
+    const r=await fetchT(`https://api.binance.com/api/v3/klines?symbol=${binanceSym}&interval=1d&limit=60&_t=${Date.now()}`,7000);
+    if(!r.ok)return;
+    const arr=await r.json();
+    const candles=arr.map(k=>({
+      d:new Date(k[0]).toISOString().slice(0,10),
+      c:parseFloat(k[4]), // close price
+    }));
+    mergeCandles(h,localKey,candles);
+    meta[localKey]=today;
+  }catch{}
 }
 
 const STOCKS_FH={
@@ -343,16 +402,27 @@ const STOCKS_FH={
   IBIT:{fh:'IBIT',label:'Bitcoin ETF',radar:true},
 };
 
-async function fetchStocks(){
+async function fetchStocks(h,meta){
   const keys=Object.keys(STOCKS_FH);
+  // 1. Fetch quotes (fast, parallel)
   await Promise.allSettled(keys.map(async k=>{
     const{fh,label}=STOCKS_FH[k];
     const q=await fhQuote(fh);
-    DATA[k]=q?{label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:'Finnhub'}:{label,price:null,prev:null,pct:null,ok:false,closes:[],source:'Finnhub'};
+    DATA[k]=q
+      ?{label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:'Finnhub'}
+      :{label,price:null,prev:null,pct:null,ok:false,closes:[],source:'Finnhub'};
   }));
-  const h=loadHist();
+  // 2. Fetch candles for main (non-radar) symbols — batched to avoid rate limit
+  const mainKeys=keys.filter(k=>!STOCKS_FH[k].radar);
+  const radarKeys=keys.filter(k=>STOCKS_FH[k].radar);
+  // Main symbols first (they matter most for signals)
+  await Promise.allSettled(mainKeys.map(k=>fetchCandles(STOCKS_FH[k].fh,k,h,meta)));
+  // Radar: only fetch if stale, sequentially to stay within rate limit
+  for(const k of radarKeys){
+    await fetchCandles(STOCKS_FH[k].fh,k,h,meta);
+  }
+  // 3. Push today's quote into history and get closes array
   keys.forEach(k=>{DATA[k].closes=pushAndGet(h,k,DATA[k].price,DATA[k].prev);});
-  saveHist(h);
 }
 
 async function fetchCrypto(){
@@ -603,12 +673,27 @@ async function analyserTout(){
   liveDot.className='sb-dot';liveTxt.textContent='Analyse en cours…';
   try{
     await step(5,'Quotes temps réel…');
-    const [rawNews]=await Promise.all([fetchNews().catch(()=>[]),fetchStocks().catch(()=>{}),fetchCrypto().catch(()=>{})]);
+    const h=loadHist(),meta=loadMeta();
+    const [rawNews]=await Promise.all([
+      fetchNews().catch(()=>[]),
+      fetchStocks(h,meta).catch(()=>{}),
+      fetchCrypto().catch(()=>{}),
+    ]);
 
-    await step(65,'RSI · 5j · 20j · volatilité…');
-    const hh=loadHist();
-    ['BTC','ETH','SOL','XRP'].forEach(k=>{if(DATA[k]?.ok&&DATA[k].price)DATA[k].closes=pushAndGet(hh,k,DATA[k].price,DATA[k].prev);});
-    saveHist(hh);
+    await step(45,'Historique 60j — candles crypto…');
+    const cryptoPairs={BTC:'BTCUSDT',ETH:'ETHUSDT',SOL:'SOLUSDT',XRP:'XRPUSDT'};
+    await Promise.allSettled(
+      Object.entries(cryptoPairs).map(([k,sym])=>fetchCryptoCandles(sym,k,h,meta))
+    );
+
+    // Push today's quote into history for crypto too
+    ['BTC','ETH','SOL','XRP'].forEach(k=>{
+      if(DATA[k]?.ok&&DATA[k].price)DATA[k].closes=pushAndGet(h,k,DATA[k].price,DATA[k].prev);
+    });
+    saveHist(h);
+    saveMeta(meta);
+
+    await step(70,'RSI · 5j · 20j · volatilité…');
     Object.keys(DATA).forEach(k=>{
       const d=DATA[k];if(!d?.closes?.length)return;
       if(d.closes.length>14)d.rsi=rsi14(d.closes);
@@ -654,28 +739,36 @@ async function analyserTout(){
   }
 }
 
-/* ── Toggle card — scroll only if out of view ── */
+/* ── Toggle card — scroll only if card top hidden behind topbar ── */
 function toggleMC(key){
   const mc=document.getElementById('mc-'+key);if(!mc)return;
   const isOpen=mc.classList.contains('open');
   document.querySelectorAll('.mc.open').forEach(el=>el.classList.remove('open'));
   if(!isOpen){
     mc.classList.add('open');
-    // Scroll only if card top is out of viewport
-    requestAnimationFrame(()=>{
+    // After transition, scroll card into view if partially hidden
+    setTimeout(()=>{
       const rect=mc.getBoundingClientRect();
       const topbarH=document.querySelector('.topbar')?.offsetHeight||48;
-      if(rect.top<topbarH+10){
-        const targetY=window.scrollY+rect.top-topbarH-10;
-        window.scrollTo({top:targetY,behavior:'smooth'});
+      const margin=10;
+      if(rect.top<topbarH+margin){
+        // Card top is above viewport
+        window.scrollTo({top:window.scrollY+rect.top-topbarH-margin,behavior:'smooth'});
+      } else if(rect.bottom>window.innerHeight-margin){
+        // Card bottom is below viewport — scroll just enough to show it, capped so top stays visible
+        const scrollNeeded=rect.bottom-(window.innerHeight-margin);
+        const maxScroll=rect.top-topbarH-margin;
+        window.scrollTo({top:window.scrollY+Math.min(scrollNeeded,maxScroll),behavior:'smooth'});
       }
-    });
+    },360);
   }
 }
 
 /* ── Render global ── */
 function renderGlobal(signals,NEWS,ms){
   const nbHist=Object.keys(DATA).filter(k=>DATA[k]?.closes?.length>1).length;
+  const nbRsi=Object.keys(DATA).filter(k=>DATA[k]?.rsi!=null).length;
+  const avgPoints=Math.round(Object.keys(DATA).filter(k=>DATA[k]?.closes?.length).reduce((s,k)=>s+DATA[k].closes.length,0)/Math.max(nbHist,1));
   const nbTotal=Object.keys(DATA).length;
 
   const MKTS=[
@@ -708,7 +801,7 @@ function renderGlobal(signals,NEWS,ms){
     ${miniActifs?`<div class="vedette-actifs">${miniActifs}</div>`:''}
   </div>`;
 
-  const safetyHTML=`<div class="safety-note">🔒 ACHAT bloqué si : RSI > 75 · chute 5j > 8% · vol > 4%/j · DANGER si ≥ 2 alertes critiques<br>📊 Historique : ${nbHist}/${nbTotal} actifs avec ≥ 2 points (s'enrichit à chaque analyse)</div>`;
+  const safetyHTML=`<div class="safety-note">🔒 ACHAT bloqué si : RSI > 75 · chute 5j > 8% · vol > 4%/j · DANGER si ≥ 2 alertes critiques<br>📊 Historique : ${nbHist}/${nbTotal} actifs · moy. ${avgPoints} j/actif · RSI actif sur ${nbRsi} symboles</div>`;
 
   const cards=MKTS.map(m=>{
     if(m.isRadar){
