@@ -243,7 +243,7 @@ a{color:inherit;text-decoration:none;}
   <div class="main" style="margin-left:0;">
     <div class="topbar">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés</span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.2</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -302,7 +302,7 @@ a{color:inherit;text-decoration:none;}
 
     <div class="footer">
       ⚠ Informatif uniquement — pas un conseil en investissement. Risque très élevé sur produits à levier.<br>
-      Sources : Finnhub · Binance · CoinGecko · MyMemory
+      Sources : Finnhub · Binance · CoinGecko · Newsdata.io · MyMemory
     </div>
   </div><!-- /main -->
 </div>
@@ -504,20 +504,83 @@ async function fetchCrypto(){
   }catch{}
 }
 
-async function fetchNews(){
+const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
+
+/* ── Finnhub news (EN, panel élargi) ── */
+async function fetchNewsFH(){
   const all=[];
-  const syms=['NVDA','AMD','QQQ','AAPL','MSFT','META','GLD','USO'];
-  await Promise.allSettled(syms.map(sym=>{
-    const to=new Date().toISOString().slice(0,10);
-    const from=new Date(Date.now()-3*86400000).toISOString().slice(0,10);
-    return fetchT(fhUrl(`/company-news?symbol=${sym}&from=${from}&to=${to}`),6000)
-      .then(r=>r.json()).then(d=>{if(Array.isArray(d))all.push(...d.slice(0,3));}).catch(()=>{});
-  }));
+  const syms=['NVDA','AMD','TSM','AVGO','QQQ','MSFT','AAPL','META','GOOG','ASML',
+              'USO','XOM','CVX','GLD','SLV','BTC','ETH','AMZN','TSLA','JPM'];
+  const to=new Date().toISOString().slice(0,10);
+  const from=new Date(Date.now()-4*86400000).toISOString().slice(0,10);
+  await Promise.allSettled(syms.map(sym=>
+    fetchT(fhUrl(`/company-news?symbol=${sym}&from=${from}&to=${to}`),6000)
+      .then(r=>r.json()).then(d=>{if(Array.isArray(d))all.push(...d.slice(0,5));}).catch(()=>{})
+  ));
   const seen=new Set();
-  return all.filter(n=>{if(!n.headline||seen.has(n.headline))return false;seen.add(n.headline);return true;})
-    .sort((a,b)=>b.datetime-a.datetime).slice(0,20);
+  return all
+    .filter(n=>{if(!n.headline||seen.has(n.headline))return false;seen.add(n.headline);return true;})
+    .sort((a,b)=>b.datetime-a.datetime)
+    .slice(0,40)
+    .map(n=>({
+      impact:sentimentNews(n),
+      titre:n.headline||'',
+      detail:(n.summary||'').slice(0,280),
+      source:n.source||'Finnhub',url:n.url||'',
+      time:n.datetime?new Date(n.datetime*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
+      lang:'en',
+    }));
 }
 
+/* ── Newsdata.io (FR natif) ── */
+async function fetchNewsND(){
+  const queries=[
+    'bourse semiconducteurs nvidia amd',
+    'nasdaq technologie apple microsoft meta',
+    'bourse europe cac dax airbus lvmh total',
+    'petrole energie opec or metaux',
+    'bitcoin ethereum crypto blockchain',
+    'marches financiers economie fed bce',
+  ];
+  const all=[];
+  await Promise.allSettled(queries.map(async q=>{
+    try{
+      const url=`https://newsdata.io/api/1/news?apikey=${ND}&q=${encodeURIComponent(q)}&language=fr&category=business&size=5`;
+      const r=await fetchT(url,7000);
+      if(!r.ok)return;
+      const d=await r.json();
+      if(d.results)all.push(...d.results);
+    }catch{}
+  }));
+  const seen=new Set();
+  return all
+    .filter(n=>{if(!n.title||seen.has(n.title))return false;seen.add(n.title);return true;})
+    .sort((a,b)=>new Date(b.pubDate||0)-new Date(a.pubDate||0))
+    .slice(0,40)
+    .map(n=>({
+      impact:sentimentNews({headline:n.title,summary:n.description||''}),
+      titre:n.title||'',
+      detail:(n.description||'').slice(0,280),
+      source:n.source_id||n.source_name||'Newsdata',
+      url:n.link||'',
+      time:n.pubDate?new Date(n.pubDate).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
+      lang:'fr',
+    }));
+}
+
+async function fetchNews(){
+  const [fh,nd]=await Promise.allSettled([fetchNewsFH(),fetchNewsND()]);
+  const newsFH=fh.status==='fulfilled'?fh.value:[];
+  const newsND=nd.status==='fulfilled'?nd.value:[];
+  // FR news en premier, EN ensuite, dédoublonnage global par titre
+  const seen=new Set();
+  return [...newsND,...newsFH].filter(n=>{
+    const k=n.titre.slice(0,60);
+    if(seen.has(k))return false;seen.add(k);return true;
+  });
+}
+
+/* ── Traduction (uniquement pour les news EN de Finnhub) ── */
 async function traduire(txt){
   if(!txt||txt.length<4)return txt;
   try{
@@ -528,17 +591,23 @@ async function traduire(txt){
 }
 async function traduireNews(news){
   const out=[];
-  for(let i=0;i<news.length;i+=6){
-    const batch=news.slice(i,i+6);
+  const enNews=news.filter(n=>n.lang==='en');
+  const frNews=news.filter(n=>n.lang==='fr');
+  // FR news : pas de traduction, juste formater
+  frNews.forEach(n=>out.push({...n,resume:n.detail}));
+  // EN news : traduire par batch
+  for(let i=0;i<enNews.length;i+=5){
+    const batch=enNews.slice(i,i+5);
     const res=await Promise.allSettled(batch.map(async n=>({
       ...n,
       titre:await traduire(n.titre),
       resume:n.detail?await traduire(n.detail):'',
     })));
     res.forEach((r,j)=>out.push(r.status==='fulfilled'?r.value:{...batch[j],resume:''}));
-    if(i+6<news.length)await new Promise(r=>setTimeout(r,400));
+    if(i+5<enNews.length)await new Promise(r=>setTimeout(r,350));
   }
-  return out;
+  // Re-trier : FR en premier, puis EN traduit
+  return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
 }
 
 /* ── Indicators ── */
@@ -764,15 +833,8 @@ async function analyserTout(){
       if(d.closes.length>=11)d._vol=volatilite(d.closes);
     });
 
-    await step(75,'Traduction actualités…');
-    const newsRaw=(rawNews||[]).map(n=>({
-      impact:sentimentNews(n),
-      titre:n.headline||'',
-      detail:(n.summary||n.description||'').slice(0,250),
-      source:n.source||'',url:n.url||'',
-      time:n.datetime?new Date(n.datetime*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
-    }));
-    const NEWS=newsRaw.length>0?await traduireNews(newsRaw).catch(()=>newsRaw):[];
+    await step(75,'Actualités FR + traduction EN…');
+    const NEWS=rawNews?.length>0?await traduireNews(rawNews).catch(()=>rawNews):[];
     _NEWS=NEWS;
 
     await step(93,'Calcul des signaux…');
@@ -789,7 +851,13 @@ async function analyserTout(){
     _signals=signals;
     await step(100,'Prêt.');
     ldr.style.display='none';btn.disabled=false;
-    document.getElementById('last-update').textContent=nowStr();
+    document.getElementById('last-update').textContent='Mis à jour : '+nowStr();
+    // Incrémenter la version à chaque analyse
+    const verEl=document.getElementById('ver-label');
+    if(verEl){
+      const cur=verEl.textContent.match(/v(\d+)\.(\d+)/);
+      if(cur)verEl.textContent=`v${cur[1]}.${+cur[2]+1}`;
+    }
     liveDot.className='sb-dot live';liveTxt.textContent='Mis à jour '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     renderGlobal(signals,NEWS,ms);
     renderPrediction(signals,NEWS);
