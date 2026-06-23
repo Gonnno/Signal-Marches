@@ -381,6 +381,7 @@ function setTopbarHeight(){
 }
 window.addEventListener('load',setTopbarHeight);
 window.addEventListener('resize',setTopbarHeight);
+function sigCls(h){return h>=60?'g':h<=42?'r':'a';}
 function badgeCls(s){return s==='ACHAT'?'b-buy':s==='VENTE'?'b-sell':s==='DANGER'?'b-danger':'b-hold';}
 function pctCls(p){if(p==null)return'dim';const v=+p;return isNaN(v)?'dim':v>0.3?'g':v<-0.3?'r':'dim';}
 function fmtPct(p){if(p==null)return'—';const v=+p;return isNaN(v)?'—':(v>=0?'+':'')+v.toFixed(2)+'%';}
