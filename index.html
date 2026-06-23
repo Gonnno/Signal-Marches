@@ -790,7 +790,6 @@ async function analyserTout(){
     await step(100,'Prêt.');
     ldr.style.display='none';btn.disabled=false;
     document.getElementById('last-update').textContent=nowStr();
-    document.getElementById('ver-date').textContent=new Date().toLocaleDateString('fr-FR');
     liveDot.className='sb-dot live';liveTxt.textContent='Mis à jour '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     renderGlobal(signals,NEWS,ms);
     renderPrediction(signals,NEWS);
