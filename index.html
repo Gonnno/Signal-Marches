@@ -23,35 +23,30 @@ a{color:inherit;text-decoration:none;}
 
 /* ── Layout ── */
 .app{display:flex;min-height:100vh;}
-.sidebar{width:var(--sb);background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .25s;}
-.main{margin-left:var(--sb);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;}
+.main{flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;}
 
-/* ── Sidebar ── */
-.sb-logo{padding:1.25rem 1.1rem .9rem;border-bottom:1px solid var(--brd);}
-.sb-brand{font:700 13px/1 'Space Grotesk',sans-serif;letter-spacing:.02em;}
-.sb-version{font:400 12px/1 'IBM Plex Mono',monospace;color:var(--tx3);margin-top:4px;}
-.sb-nav{padding:.6rem 0;flex:1;overflow-y:auto;}
-.sb-section{font:500 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;padding:.6rem 1.1rem .3rem;}
-.sb-item{display:flex;align-items:center;gap:8px;padding:.55rem 1.1rem;cursor:pointer;transition:background .15s,color .15s;font:500 12px/1 'Space Grotesk',sans-serif;color:var(--tx2);border-left:2px solid transparent;}
-.sb-item:hover{background:var(--sur);color:var(--tx);}
-.sb-item.active{background:var(--sur);color:var(--ac2);border-left-color:var(--ac);}
-.sb-item .icon{width:16px;text-align:center;font-size:13px;}
-.sb-status{padding:.9rem 1.1rem;border-top:1px solid var(--brd);}
-.sb-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--tx3);margin-right:6px;vertical-align:middle;}
+/* ── Status dot (réutilisé dans topbar) ── */
+.sb-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tx3);margin-right:5px;vertical-align:middle;flex-shrink:0;}
 .sb-dot.live{background:var(--gr);box-shadow:0 0 6px var(--gr);}
-.sb-stxt{font:400 12px/1.4 'IBM Plex Mono',monospace;color:var(--tx2);}
-.sb-refresh{margin-top:.5rem;}
-.sb-refresh select{width:100%;background:var(--sur);border:1px solid var(--brd);color:var(--tx2);font:400 12px/1 'IBM Plex Mono',monospace;border-radius:5px;padding:5px 7px;cursor:pointer;}
+.sb-stxt{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx2);}
 
 /* ── Topbar ── */
-.topbar{background:var(--bg2);border-bottom:1px solid var(--brd);padding:.6rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;position:sticky;top:0;z-index:50;}
-.topbar-left{display:flex;align-items:center;gap:.8rem;}
-.topbar-right{display:flex;align-items:center;gap:.6rem;}
-.topbar-title{font:700 15px/1 'Space Grotesk',sans-serif;}
-.topbar-time{font:400 13px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--brd);padding:.55rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.6rem;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.topbar-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0;}
+.topbar-brand{font:700 14px/1 'Space Grotesk',sans-serif;letter-spacing:.02em;white-space:nowrap;}
+.topbar-sep{color:var(--tx3);font-size:14px;}
+.topbar-status{display:flex;align-items:center;}
+.topbar-time{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);white-space:nowrap;}
 .topbar-refresh{background:var(--sur);border:1px solid var(--brd);color:var(--tx2);font:400 11px/1 'IBM Plex Mono',monospace;border-radius:6px;padding:5px 8px;cursor:pointer;}
 .topbar-refresh:focus{outline:none;border-color:var(--ac);}
-.btn-analyze{padding:.5rem 1.1rem;background:var(--ac);color:#fff;border:none;border-radius:7px;font:600 13px/1 'Space Grotesk',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;flex-shrink:0;}
+
+/* ── Topbar nav links (PC) ── */
+.tb-nav-item{background:none;border:none;color:var(--tx2);font:500 13px/1 'Space Grotesk',sans-serif;cursor:pointer;padding:.35rem .65rem;border-radius:6px;transition:background .15s,color .15s;white-space:nowrap;}
+.tb-nav-item:hover{background:var(--sur);color:var(--tx);}
+.tb-nav-item.active{background:var(--sur);color:var(--ac2);}
+
+.btn-analyze{padding:.45rem 1rem;background:var(--ac);color:#fff;border:none;border-radius:7px;font:600 13px/1 'Space Grotesk',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;flex-shrink:0;}
 .btn-analyze:hover{background:var(--ac2);color:#0d0d14;}
 .btn-analyze:disabled{opacity:.4;cursor:not-allowed;}
 
@@ -223,11 +218,12 @@ a{color:inherit;text-decoration:none;}
 .bn-icon{font-size:18px;line-height:1;}
 
 @media(max-width:680px){
-  .sidebar{display:none;}
-  .main{margin-left:0;padding-bottom:0;}
+  .main{padding-bottom:0;}
   .topbar-time{display:none;}
-  .topbar-refresh-desktop{display:none;}
-  .btn-analyze{display:flex;}
+  .topbar-status{display:none;}
+  .topbar-refresh{display:none;}
+  .tb-nav-item{display:none;}
+  .topbar-sep{display:none;}
   .btn-analyze .btn-label{display:none;}
   .btn-analyze{padding:.45rem .7rem;}
   .mc-hor{display:none;}
@@ -243,31 +239,19 @@ a{color:inherit;text-decoration:none;}
 </head>
 <body>
 <div class="app">
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sb-logo">
-      <div class="sb-brand">Signal Marchés</div>
-      <div class="sb-version">v3.1 · <span id="ver-date">—</span></div>
-    </div>
-    <nav class="sb-nav">
-      <div class="sb-section">Marchés</div>
-      <div class="sb-item active" onclick="gotoPage('global',this)"><span class="icon">🌐</span> Vue globale</div>
-      <div class="sb-item" onclick="gotoPage('prediction',this)"><span class="icon">🔮</span> Prédiction</div>
-    </nav>
-    <div class="sb-status">
-      <div><span class="sb-dot" id="live-dot"></span><span class="sb-stxt" id="live-txt">En attente…</span></div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main">
+  <!-- MAIN (sidebar supprimée, nav dans topbar) -->
+  <div class="main" style="margin-left:0;">
     <div class="topbar">
       <div class="topbar-left">
-        <span class="topbar-title">Signal Marchés</span>
-        <span class="topbar-time" id="last-update">—</span>
+        <span class="topbar-brand">Signal Marchés</span>
+        <span class="topbar-sep">·</span>
+        <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
+        <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
       </div>
       <div class="topbar-right">
-        <select class="topbar-refresh topbar-refresh-desktop" onchange="setAutoRefresh(+this.value)" title="Auto-refresh">
+        <span class="topbar-dot-wrap"><span class="sb-dot" id="live-dot"></span><span class="sb-stxt topbar-status" id="live-txt">En attente…</span></span>
+        <span class="topbar-time" id="last-update"></span>
+        <select class="topbar-refresh" id="refresh-select" onchange="syncRefresh(+this.value)">
           <option value="0">↻ OFF</option>
           <option value="300">↻ 5 min</option>
           <option value="900">↻ 15 min</option>
@@ -280,7 +264,7 @@ a{color:inherit;text-decoration:none;}
       </div>
     </div>
 
-    <!-- TOP NAV (mobile) -->
+    <!-- TOP NAV (mobile seulement) -->
     <nav class="top-nav" id="top-nav">
       <button class="bn-item active" id="bn-global" onclick="gotoPageMobile('global')">
         <span class="bn-icon">🌐</span>
@@ -291,7 +275,7 @@ a{color:inherit;text-decoration:none;}
         <span>Prédiction</span>
       </button>
       <div class="bn-refresh">
-        <select onchange="setAutoRefresh(+this.value)">
+        <select id="refresh-select-mobile" onchange="syncRefresh(+this.value)">
           <option value="0">↻ OFF</option>
           <option value="300">5 min</option>
           <option value="900">15 min</option>
@@ -355,23 +339,26 @@ function fmtPrice(price,key){
 function nowStr(){return new Date().toLocaleString('fr-FR');}
 
 /* ── Navigation ── */
-function gotoPage(name,el){
+function gotoPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.tb-nav-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(i=>i.classList.remove('active'));
   document.getElementById('page-'+name)?.classList.add('active');
-  if(el)el.classList.add('active');
-  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('tb-'+name)?.classList.add('active');
+  document.getElementById('bn-'+name)?.classList.add('active');
 }
 function gotoPageMobile(name){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.bn-item').forEach(i=>i.classList.remove('active'));
-  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('page-'+name)?.classList.add('active');
-  document.getElementById('bn-'+name)?.classList.add('active');
-  // sync sidebar too
-  const sbMap={global:0,prediction:1};
-  document.querySelectorAll('.sb-item')[sbMap[name]]?.classList.add('active');
+  gotoPage(name);
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── Auto-refresh (deux selects synchronisés) ── */
+function syncRefresh(secs){
+  setAutoRefresh(secs);
+  // sync the other select
+  document.querySelectorAll('#refresh-select,#refresh-select-mobile').forEach(el=>{
+    el.value=String(secs);
+  });
 }
 function setAutoRefresh(secs){
   if(_autoTimer){clearInterval(_autoTimer);_autoTimer=null;}
