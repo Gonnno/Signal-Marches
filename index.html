@@ -352,18 +352,51 @@ function gotoPageMobile(name){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ── Auto-refresh (deux selects synchronisés) ── */
-function syncRefresh(secs){
-  setAutoRefresh(secs);
-  // sync the other select
-  document.querySelectorAll('#refresh-select,#refresh-select-mobile').forEach(el=>{
-    el.value=String(secs);
-  });
+/* ── Quota Newsdata (max 100 appels/jour = ~16 analyses × 6 requêtes) ── */
+const QUOTA_KEY='smv3_quota';
+function loadQuota(){
+  try{
+    const q=JSON.parse(localStorage.getItem(QUOTA_KEY)||'{}');
+    const today=new Date().toISOString().slice(0,10);
+    if(q.date!==today)return{date:today,calls:0};
+    return q;
+  }catch{return{date:new Date().toISOString().slice(0,10),calls:0};}
 }
+function saveQuota(q){try{localStorage.setItem(QUOTA_KEY,JSON.stringify(q));}catch{}}
+function canFetchND(){
+  const q=loadQuota();
+  return q.calls<96; // 96 = 16 analyses × 6 requêtes, garde 4 de marge
+}
+function incrementQuota(n=6){
+  const q=loadQuota();q.calls+=n;saveQuota(q);
+}
+function quotaRestant(){
+  const q=loadQuota();return Math.max(0,96-q.calls);
+}
+
+/* ── Auto-refresh avec guard anti-empilement ── */
+let _isRunning=false;
 function setAutoRefresh(secs){
   if(_autoTimer){clearInterval(_autoTimer);_autoTimer=null;}
-  if(secs>0)_autoTimer=setInterval(analyserTout,secs*1000);
+  if(secs>0){
+    // Avertir si le quota sera dépassé
+    const analysesParJour=Math.floor(86400/secs);
+    const reqParJour=analysesParJour*6;
+    if(reqParJour>96){
+      const minSafe=Math.ceil(86400/16/60);
+      console.warn(`Auto-refresh ${secs}s = ${analysesParJour} analyses/jour = ${reqParJour} req Newsdata. Quota dépassé. Min conseillé : ${minSafe} min.`);
+    }
+    _autoTimer=setInterval(async()=>{
+      if(_isRunning)return; // anti-empilement
+      await analyserTout();
+    },secs*1000);
+  }
 }
+function syncRefresh(secs){
+  setAutoRefresh(secs);
+  document.querySelectorAll('#refresh-select,#refresh-select-mobile').forEach(el=>{el.value=String(secs);});
+}
+// setAutoRefresh défini plus haut avec quota guard
 
 /* ── Data sources ── */
 async function fhQuote(sym){
@@ -568,11 +601,12 @@ async function fetchNewsND(){
     }));
 }
 
-async function fetchNews(){
-  const [fh,nd]=await Promise.allSettled([fetchNewsFH(),fetchNewsND()]);
-  const newsFH=fh.status==='fulfilled'?fh.value:[];
-  const newsND=nd.status==='fulfilled'?nd.value:[];
-  // FR news en premier, EN ensuite, dédoublonnage global par titre
+async function fetchNews(useND=true){
+  const tasks=[fetchNewsFH()];
+  if(useND)tasks.push(fetchNewsND());
+  const [fh,nd]=await Promise.allSettled(tasks);
+  const newsFH=fh?.status==='fulfilled'?fh.value:[];
+  const newsND=nd?.status==='fulfilled'?nd.value:[];
   const seen=new Set();
   return [...newsND,...newsFH].filter(n=>{
     const k=n.titre.slice(0,60);
@@ -794,6 +828,8 @@ function step(p,t){document.getElementById('lf').style.width=p+'%';document.getE
 
 /* ── Main analysis ── */
 async function analyserTout(){
+  if(_isRunning)return;
+  _isRunning=true;
   const btn=document.getElementById('btn'),ldr=document.getElementById('ldr');
   btn.disabled=true;ldr.style.display='block';
   document.getElementById('sec-global').innerHTML='';
@@ -804,8 +840,9 @@ async function analyserTout(){
     const h=loadHist(),meta=loadMeta();
 
     await step(5,'Quotes temps réel…');
+    const useND=canFetchND();
     const [rawNews]=await Promise.all([
-      fetchNews().catch(()=>[]),
+      fetchNews(useND).catch(()=>[]),
       fetchStocks(h,meta).catch(()=>{}),
       fetchCrypto().catch(()=>{}),
     ]);
@@ -834,6 +871,7 @@ async function analyserTout(){
     });
 
     await step(75,'Actualités FR + traduction EN…');
+    if(useND)incrementQuota(6);
     const NEWS=rawNews?.length>0?await traduireNews(rawNews).catch(()=>rawNews):[];
     _NEWS=NEWS;
 
@@ -850,7 +888,7 @@ async function analyserTout(){
     };
     _signals=signals;
     await step(100,'Prêt.');
-    ldr.style.display='none';btn.disabled=false;
+    ldr.style.display='none';btn.disabled=false;_isRunning=false;
     document.getElementById('last-update').textContent='Mis à jour : '+nowStr();
     // Incrémenter la version à chaque analyse
     const verEl=document.getElementById('ver-label');
@@ -862,7 +900,7 @@ async function analyserTout(){
     renderGlobal(signals,NEWS,ms);
     renderPrediction(signals,NEWS);
   }catch(e){
-    ldr.style.display='none';btn.disabled=false;
+    ldr.style.display='none';btn.disabled=false;_isRunning=false;
     liveDot.className='sb-dot';liveTxt.textContent='Erreur';
     document.getElementById('sec-global').innerHTML=`<div class="alert-box">⚠ Erreur : ${e.message}<br>Vérifiez votre connexion.</div>`;
   }
@@ -928,7 +966,9 @@ function renderGlobal(signals,NEWS,ms){
     ${miniActifs?`<div class="vedette-actifs">${miniActifs}</div>`:''}
   </div>`;
 
-  const safetyHTML=`<div class="safety-note">🔒 ACHAT bloqué si : RSI > 75 · chute 5j > 8% · vol > 4%/j · DANGER si ≥ 2 alertes critiques<br>📊 Historique : ${nbHist}/${nbTotal} actifs · moy. ${avgPoints} j/actif · RSI actif sur ${nbRsi} symboles</div>`;
+  const qRest=quotaRestant();
+  const ndStatus=qRest>0?`Newsdata : ${qRest} req restantes aujourd'hui`:`⚠ Quota Newsdata atteint — news EN uniquement`;
+  const safetyHTML=`<div class="safety-note">🔒 ACHAT bloqué si : RSI > 75 · chute 5j > 8% · vol > 4%/j · DANGER si ≥ 2 alertes critiques<br>📊 Historique : ${nbHist}/${nbTotal} actifs · moy. ${avgPoints} j/actif · RSI actif sur ${nbRsi} symboles<br>📡 ${ndStatus}</div>`;
 
   const cards=MKTS.map(m=>{
     if(m.isRadar){
