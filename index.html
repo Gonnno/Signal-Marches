@@ -243,7 +243,7 @@ a{color:inherit;text-decoration:none;}
   <div class="main" style="margin-left:0;">
     <div class="topbar">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.2</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.3</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -486,8 +486,8 @@ const STOCKS_FH={
   QQQ:{fh:'QQQ',label:'QQQ ETF'},MSFT:{fh:'MSFT',label:'Microsoft'},AAPL:{fh:'AAPL',label:'Apple'},META:{fh:'META',label:'Meta'},GOOG:{fh:'GOOG',label:'Alphabet'},
   USO:{fh:'USO',label:'USO/WTI'},XOM:{fh:'XOM',label:'ExxonMobil'},CVX:{fh:'CVX',label:'Chevron'},OXY:{fh:'OXY',label:'Occidental'},
   GLD:{fh:'GLD',label:'GLD/Or'},SLV:{fh:'SLV',label:'Argent'},GDX:{fh:'GDX',label:'Minières Or'},
-  'TTE.PA':{fh:'TTE:XPAR',label:'TotalEnergies'},'AIR.PA':{fh:'AIR:XPAR',label:'Airbus'},'LVMH.PA':{fh:'MC:XPAR',label:'LVMH'},
-  'SAN.PA':{fh:'SAN:XPAR',label:'Sanofi'},'BNP.PA':{fh:'BNP:XPAR',label:'BNP Paribas'},'OR.PA':{fh:'OR:XPAR',label:"L'Oréal"},
+  'TTE.PA':{fh:'TTE',label:'TotalEnergies'},'AIR.PA':{fh:'AIR',label:'Airbus'},'LVMH.PA':{fh:'MC',label:'LVMH'},
+  'SAN.PA':{fh:'SAN',label:'Sanofi'},'BNP.PA':{fh:'BNP',label:'BNP Paribas'},'OR.PA':{fh:'OR',label:"L'Oréal"},
   BOTZ:{fh:'BOTZ',label:'IA/Robotique',radar:true},ARKK:{fh:'ARKK',label:'ARK Innov.',radar:true},ITA:{fh:'ITA',label:'Défense',radar:true},
   ICLN:{fh:'ICLN',label:'Énergie propre',radar:true},XBI:{fh:'XBI',label:'Biotech',radar:true},HACK:{fh:'HACK',label:'Cybersécurité',radar:true},
   TQQQ:{fh:'TQQQ',label:'Nasdaq ×3',radar:true},SOXL:{fh:'SOXL',label:'Semis ×3',radar:true},UVXY:{fh:'UVXY',label:'Vol. VIX',radar:true},
@@ -715,9 +715,11 @@ function computeRadarVolatilite(){
   return panel.map(k=>{
     const d=DATA[k];if(!d?.ok)return null;
     const{score,alerts,blocked}=scoreAsset(d);
+    // Utiliser _vol calculé, sinon |pct| comme proxy (volatilité implicite du jour)
+    const vol=d._vol!=null?d._vol:(d.pct!=null?Math.abs(d.pct):null);
     const sig=blocked?(d._p5!=null&&d._p5<-8?'VENTE':'NEUTRE'):(score>=60?'ACHAT':score<=42?'VENTE':'NEUTRE');
     const nbCrit=alerts.filter(a=>a.msg?.startsWith('🚨')).length;
-    return{key:k,label:d.label,pct:d.pct,vol:d._vol,p5:d._p5,score,sig:nbCrit>=1?'DANGER':sig,alerts};
+    return{key:k,label:d.label,pct:d.pct,vol,p5:d._p5,score,sig:nbCrit>=1?'DANGER':sig,alerts,hasHistory:d._vol!=null};
   }).filter(Boolean).sort((a,b)=>(b.vol||0)-(a.vol||0)).slice(0,4);
 }
 
@@ -978,7 +980,7 @@ function renderGlobal(signals,NEWS,ms){
         const cls=r.vol>4?'r':r.vol>2?'a':'dim';
         return`<div class="radar-item">
           <div class="radar-item-lbl">${['🥇','🥈','🥉','4·'][i]||''} ${r.label}</div>
-          <div class="radar-item-vol ${cls}">${r.vol!=null?r.vol.toFixed(1)+'%/j':'—'}</div>
+          <div class="radar-item-vol ${cls}">${r.vol!=null?`${r.hasHistory?'':' ~'}${r.vol.toFixed(1)}%/j`:'—'}</div>
           <div class="radar-item-sub"><span class="${pctCls(r.pct)}">${fmtPct(r.pct)} jour</span> · <span class="badge ${badgeCls(r.sig)}" style="font-size:8px;padding:1px 5px;">${r.sig}</span></div>
         </div>`;
       }).join('');
@@ -1113,7 +1115,7 @@ function renderPrediction(signals,NEWS){
       ?`Pas d'actualité spécifique. Signal : <b>${s.sig}</b> (${fmtScore(s.H)}/100). ${mktCtx[m.key]}`
       :`${mn.length} actu(s) — sentiment ${niIcon} <b>${niTxt}</b>. « ${mn[0].titre} ». ${mktCtx[m.key]} ${action}`;
     const alertHTML=s.alerts?.length?`<div class="alert-box" style="margin-bottom:.4rem;">${s.alerts.map(a=>`⚠ <b>${a.label}</b> : ${a.msg}`).join('<br>')}</div>`:'';
-    const newsHTML=mn.slice(0,2).map(n=>`<a class="news-item ${n.impact}" href="${n.url||'#'}" target="_blank" rel="noopener noreferrer">
+    const newsHTML=mn.slice(0,5).map(n=>`<a class="news-item ${n.impact}" href="${n.url||'#'}" target="_blank" rel="noopener noreferrer">
       <div class="news-title">${n.titre}</div>
       ${n.resume?`<div class="news-sum">${n.resume}</div>`:''}
       <div class="news-meta"><span>${n.source||''}</span>${n.time?`<span>· ${n.time}</span>`:''}${n.url?`<span class="news-link">↗</span>`:''}</div>
