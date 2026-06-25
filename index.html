@@ -223,7 +223,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.4</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.5</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -272,7 +272,7 @@ a{color:inherit;text-decoration:none;}
 
     <div class="footer">
       ⚠ Informatif uniquement — pas un conseil en investissement. Risque très élevé sur produits à levier.<br>
-      Sources : Finnhub · Binance · CoinGecko · Newsdata.io · MyMemory
+      Sources : Finnhub · Binance · CoinGecko · Newsdata.io · Claude API
     </div>
   </div><!-- /main -->
 </div>
@@ -584,40 +584,61 @@ async function fetchNews(useND=true){
   });
 }
 
-/* ── Traduction (uniquement pour les news EN de Finnhub) ── */
-async function traduire(txt){
-  if(!txt||txt.length<4)return txt;
+/* ── Traduction via Claude API (fiable, pas de quota externe) ── */
+async function traduireBatch(textes){
+  if(!textes.length)return {};
   try{
-    const r=await fetchT(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt.slice(0,450))}&langpair=en|fr&de=signal.marches@noreply.fr&_t=${Date.now()}`,5000);
-    const d=await r.json();
-    // Détecter quota dépassé
-    if(d.responseStatus===403||d.responseStatus===429)return txt;
-    const t=d?.responseData?.translatedText;
-    return(t&&!t.toLowerCase().includes('mymemory')&&!t.toLowerCase().includes('quota')&&t.length>4)?t:txt;
-  }catch{return txt;}
+    const prompt=`Traduis ces textes financiers de l'anglais vers le français. Réponds UNIQUEMENT avec un objet JSON valide de la forme {"0":"traduction0","1":"traduction1",...}. Sois concis et précis, conserve les noms propres (entreprises, indices). Textes:\n${textes.map(({id,txt})=>`${id}: ${txt}`).join('\n')}`;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!resp.ok)return {};
+    const d=await resp.json();
+    const raw=d.content?.find(c=>c.type==='text')?.text||'{}';
+    const clean=raw.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean);
+  }catch{return {};}
 }
 
 async function traduireNews(news){
   const out=[];
   const frNews=news.filter(n=>n.lang==='fr');
-  const enNews=news.filter(n=>n.lang==='en').slice(0,20); // limiter à 20 EN pour préserver quota MyMemory
+  const enNews=news.filter(n=>n.lang==='en').slice(0,25);
 
-  // FR : déjà en français, juste copier
+  // FR : déjà en français
   frNews.forEach(n=>out.push({...n,resume:n.detail||n.resume||''}));
 
-  // EN : traduire titre + résumé court (200 chars max pour économiser quota)
-  for(let i=0;i<enNews.length;i+=4){
-    const batch=enNews.slice(i,i+4);
-    const res=await Promise.allSettled(batch.map(async n=>({
-      ...n,
-      titre:await traduire(n.titre),
-      resume:n.detail?await traduire(n.detail.slice(0,200)):'',
-    })));
-    res.forEach((r,j)=>out.push(r.status==='fulfilled'?r.value:{...batch[j],resume:''}));
-    if(i+4<enNews.length)await new Promise(r=>setTimeout(r,300));
-  }
+  if(!enNews.length)return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
 
-  // FR en premier, EN traduit ensuite
+  // Construire la liste de textes à traduire (titres + résumés ensemble)
+  const items=[];
+  enNews.forEach((n,i)=>{
+    items.push({id:`t${i}`,txt:n.titre.slice(0,150)});
+    if(n.detail)items.push({id:`r${i}`,txt:n.detail.slice(0,180)});
+  });
+
+  // Traduire en 2 batches max pour rester sous 1000 tokens
+  const mid=Math.ceil(items.length/2);
+  const [res1,res2]=await Promise.all([
+    traduireBatch(items.slice(0,mid)),
+    traduireBatch(items.slice(mid)),
+  ]);
+  const translations={...res1,...res2};
+
+  enNews.forEach((n,i)=>{
+    out.push({
+      ...n,
+      titre:translations[`t${i}`]||n.titre,
+      resume:translations[`r${i}`]||n.detail||'',
+    });
+  });
+
   return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
 }
 
