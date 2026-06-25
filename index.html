@@ -588,29 +588,36 @@ async function fetchNews(useND=true){
 async function traduire(txt){
   if(!txt||txt.length<4)return txt;
   try{
-    const r=await fetchT(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt.slice(0,450))}&langpair=en|fr&_t=${Date.now()}`,5000);
-    const d=await r.json();const t=d?.responseData?.translatedText;
-    return(t&&!t.toLowerCase().includes('mymemory')&&t.length>4)?t:txt;
+    const r=await fetchT(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt.slice(0,450))}&langpair=en|fr&de=signal.marches@noreply.fr&_t=${Date.now()}`,5000);
+    const d=await r.json();
+    // Détecter quota dépassé
+    if(d.responseStatus===403||d.responseStatus===429)return txt;
+    const t=d?.responseData?.translatedText;
+    return(t&&!t.toLowerCase().includes('mymemory')&&!t.toLowerCase().includes('quota')&&t.length>4)?t:txt;
   }catch{return txt;}
 }
+
 async function traduireNews(news){
   const out=[];
-  const enNews=news.filter(n=>n.lang==='en');
   const frNews=news.filter(n=>n.lang==='fr');
-  // FR news : pas de traduction, juste formater
-  frNews.forEach(n=>out.push({...n,resume:n.detail}));
-  // EN news : traduire par batch
-  for(let i=0;i<enNews.length;i+=5){
-    const batch=enNews.slice(i,i+5);
+  const enNews=news.filter(n=>n.lang==='en').slice(0,20); // limiter à 20 EN pour préserver quota MyMemory
+
+  // FR : déjà en français, juste copier
+  frNews.forEach(n=>out.push({...n,resume:n.detail||n.resume||''}));
+
+  // EN : traduire titre + résumé court (200 chars max pour économiser quota)
+  for(let i=0;i<enNews.length;i+=4){
+    const batch=enNews.slice(i,i+4);
     const res=await Promise.allSettled(batch.map(async n=>({
       ...n,
       titre:await traduire(n.titre),
-      resume:n.detail?await traduire(n.detail):'',
+      resume:n.detail?await traduire(n.detail.slice(0,200)):'',
     })));
     res.forEach((r,j)=>out.push(r.status==='fulfilled'?r.value:{...batch[j],resume:''}));
-    if(i+5<enNews.length)await new Promise(r=>setTimeout(r,350));
+    if(i+4<enNews.length)await new Promise(r=>setTimeout(r,300));
   }
-  // Re-trier : FR en premier, puis EN traduit
+
+  // FR en premier, EN traduit ensuite
   return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
 }
 
@@ -1050,7 +1057,7 @@ function renderPrediction(signals,NEWS){
 
   const cards=MKTS_P.map(m=>{
     const s=signals[m.key];
-    const mn=NEWS.filter(n=>mktKw[m.key].test(n.titre+(n.resume||n.detail||'')));
+    const mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||n.detail||'')));
     const mb=mn.filter(n=>n.impact==='bull').length,mr=mn.filter(n=>n.impact==='bear').length;
     const ni=mb>mr?'bull':mr>mb?'bear':'neutral';
     const isDanger=s.sig==='DANGER',isVente=s.sig==='VENTE';
