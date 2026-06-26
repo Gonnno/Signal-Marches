@@ -223,7 +223,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.5</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.6</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -272,7 +272,7 @@ a{color:inherit;text-decoration:none;}
 
     <div class="footer">
       ⚠ Informatif uniquement — pas un conseil en investissement. Risque très élevé sur produits à levier.<br>
-      Sources : Finnhub · Binance · CoinGecko · Newsdata.io · Claude API
+      Sources : Finnhub · Binance · CoinGecko · Newsdata.io (FR)
     </div>
   </div><!-- /main -->
 </div>
@@ -335,13 +335,13 @@ function loadQuota(){
 function saveQuota(q){try{localStorage.setItem(QUOTA_KEY,JSON.stringify(q));}catch{}}
 function canFetchND(){
   const q=loadQuota();
-  return q.calls<96; // 96 = 16 analyses × 6 requêtes, garde 4 de marge
+  return q.calls<160; // 160 = 20 analyses × 8 requêtes, garde de la marge sur 200/jour
 }
-function incrementQuota(n=6){
+function incrementQuota(n=8){
   const q=loadQuota();q.calls+=n;saveQuota(q);
 }
 function quotaRestant(){
-  const q=loadQuota();return Math.max(0,96-q.calls);
+  const q=loadQuota();return Math.max(0,160-q.calls);
 }
 
 /* ── Auto-refresh avec guard anti-empilement ── */
@@ -507,43 +507,20 @@ async function fetchCrypto(){
   }catch{}
 }
 
+/* ── Newsdata.io uniquement — news FR natives, pas de traduction ── */
 const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
 
-/* ── Finnhub news (EN, panel élargi) ── */
-async function fetchNewsFH(){
-  const all=[];
-  const syms=['NVDA','AMD','TSM','AVGO','QQQ','MSFT','AAPL','META','GOOG','ASML',
-              'USO','XOM','CVX','GLD','SLV','BTC','ETH','AMZN','TSLA','JPM'];
-  const to=new Date().toISOString().slice(0,10);
-  const from=new Date(Date.now()-4*86400000).toISOString().slice(0,10);
-  await Promise.allSettled(syms.map(sym=>
-    fetchT(fhUrl(`/company-news?symbol=${sym}&from=${from}&to=${to}`),6000)
-      .then(r=>r.json()).then(d=>{if(Array.isArray(d))all.push(...d.slice(0,5));}).catch(()=>{})
-  ));
-  const seen=new Set();
-  return all
-    .filter(n=>{if(!n.headline||seen.has(n.headline))return false;seen.add(n.headline);return true;})
-    .sort((a,b)=>b.datetime-a.datetime)
-    .slice(0,40)
-    .map(n=>({
-      impact:sentimentNews(n),
-      titre:n.headline||'',
-      detail:(n.summary||'').slice(0,280),
-      source:n.source||'Finnhub',url:n.url||'',
-      time:n.datetime?new Date(n.datetime*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
-      lang:'en',
-    }));
-}
-
-/* ── Newsdata.io (FR natif) ── */
-async function fetchNewsND(){
+async function fetchNews(useND=true){
+  if(!useND)return[];
   const queries=[
-    'bourse semiconducteurs nvidia amd',
-    'nasdaq technologie apple microsoft meta',
-    'bourse europe cac dax airbus lvmh total',
-    'petrole energie opec or metaux',
+    'semiconducteurs nvidia amd intel bourse',
+    'nasdaq technologie apple microsoft meta alphabet',
+    'bourse europe cac dax airbus lvmh totalenergies bnp',
+    'petrole energie brut opec brent wti',
+    'or argent metaux precieux banque centrale',
     'bitcoin ethereum crypto blockchain',
-    'marches financiers economie fed bce',
+    'federal reserve bce taux inflation economie',
+    'marches financiers wall street bourse actions',
   ];
   const all=[];
   await Promise.allSettled(queries.map(async q=>{
@@ -557,89 +534,21 @@ async function fetchNewsND(){
   }));
   const seen=new Set();
   return all
-    .filter(n=>{if(!n.title||seen.has(n.title))return false;seen.add(n.title);return true;})
+    .filter(n=>{
+      if(!n.title||seen.has(n.title))return false;
+      seen.add(n.title);return true;
+    })
     .sort((a,b)=>new Date(b.pubDate||0)-new Date(a.pubDate||0))
-    .slice(0,40)
+    .slice(0,60)
     .map(n=>({
       impact:sentimentNews({headline:n.title,summary:n.description||''}),
       titre:n.title||'',
-      detail:(n.description||'').slice(0,280),
-      source:n.source_id||n.source_name||'Newsdata',
+      resume:(n.description||'').slice(0,280),
+      source:n.source_id||n.source_name||'',
       url:n.link||'',
       time:n.pubDate?new Date(n.pubDate).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
       lang:'fr',
     }));
-}
-
-async function fetchNews(useND=true){
-  const tasks=[fetchNewsFH()];
-  if(useND)tasks.push(fetchNewsND());
-  const [fh,nd]=await Promise.allSettled(tasks);
-  const newsFH=fh?.status==='fulfilled'?fh.value:[];
-  const newsND=nd?.status==='fulfilled'?nd.value:[];
-  const seen=new Set();
-  return [...newsND,...newsFH].filter(n=>{
-    const k=n.titre.slice(0,60);
-    if(seen.has(k))return false;seen.add(k);return true;
-  });
-}
-
-/* ── Traduction via Claude API (fiable, pas de quota externe) ── */
-async function traduireBatch(textes){
-  if(!textes.length)return {};
-  try{
-    const prompt=`Traduis ces textes financiers de l'anglais vers le français. Réponds UNIQUEMENT avec un objet JSON valide de la forme {"0":"traduction0","1":"traduction1",...}. Sois concis et précis, conserve les noms propres (entreprises, indices). Textes:\n${textes.map(({id,txt})=>`${id}: ${txt}`).join('\n')}`;
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    if(!resp.ok)return {};
-    const d=await resp.json();
-    const raw=d.content?.find(c=>c.type==='text')?.text||'{}';
-    const clean=raw.replace(/```json|```/g,'').trim();
-    return JSON.parse(clean);
-  }catch{return {};}
-}
-
-async function traduireNews(news){
-  const out=[];
-  const frNews=news.filter(n=>n.lang==='fr');
-  const enNews=news.filter(n=>n.lang==='en').slice(0,25);
-
-  // FR : déjà en français
-  frNews.forEach(n=>out.push({...n,resume:n.detail||n.resume||''}));
-
-  if(!enNews.length)return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
-
-  // Construire la liste de textes à traduire (titres + résumés ensemble)
-  const items=[];
-  enNews.forEach((n,i)=>{
-    items.push({id:`t${i}`,txt:n.titre.slice(0,150)});
-    if(n.detail)items.push({id:`r${i}`,txt:n.detail.slice(0,180)});
-  });
-
-  // Traduire en 2 batches max pour rester sous 1000 tokens
-  const mid=Math.ceil(items.length/2);
-  const [res1,res2]=await Promise.all([
-    traduireBatch(items.slice(0,mid)),
-    traduireBatch(items.slice(mid)),
-  ]);
-  const translations={...res1,...res2};
-
-  enNews.forEach((n,i)=>{
-    out.push({
-      ...n,
-      titre:translations[`t${i}`]||n.titre,
-      resume:translations[`r${i}`]||n.detail||'',
-    });
-  });
-
-  return out.sort((a,b)=>(a.lang==='fr'?0:1)-(b.lang==='fr'?0:1));
 }
 
 /* ── Indicators ── */
@@ -722,11 +631,12 @@ function computeRadarVolatilite(){
 }
 
 function sentimentNews(n){
-  const t=(n.headline+' '+(n.summary||'')).toLowerCase();
-  const bull=['surge','rally','gain','rise','beat','jump','record','strong','higher','growth','bullish','soar','upgrade','profit','boost'];
-  const bear=['fall','drop','loss','miss','decline','weak','lower','cut','warn','bearish','crash','plunge','downgrade','concern','risk'];
-  return bull.filter(w=>t.includes(w)).length>bear.filter(w=>t.includes(w)).length?'bull':
-         bear.filter(w=>t.includes(w)).length>bull.filter(w=>t.includes(w)).length?'bear':'neutral';
+  const t=((n.headline||n.title||'')+' '+(n.summary||n.description||'')).toLowerCase();
+  const bull=['hausse','progression','rebond','record','croissance','bénéfice','profit','solide','fort','achat','optimisme','rally','surge','gain','beat','upgrade','boost','higher','bullish'];
+  const bear=['baisse','chute','recul','perte','risque','crainte','faible','repli','vente','crise','déclin','fall','drop','loss','miss','weak','warn','crash','bearish','plunge','downgrade'];
+  const b=bull.filter(w=>t.includes(w)).length;
+  const r=bear.filter(w=>t.includes(w)).length;
+  return b>r?'bull':r>b?'bear':'neutral';
 }
 
 function getMarketStatus(){
@@ -865,9 +775,9 @@ async function analyserTout(){
       if(d.closes.length>=11)d._vol=volatilite(d.closes);
     });
 
-    await step(75,'Actualités FR + traduction EN…');
-    if(useND)incrementQuota(6);
-    const NEWS=rawNews?.length>0?await traduireNews(rawNews).catch(()=>rawNews):[];
+    await step(75,'Actualités FR…');
+    if(useND)incrementQuota(8);
+    const NEWS=rawNews||[];
     _NEWS=NEWS;
 
     await step(93,'Calcul des signaux…');
@@ -953,7 +863,7 @@ function renderGlobal(signals,NEWS,ms){
   </div>`;
 
   const qRest=quotaRestant();
-  const ndStatus=qRest>0?`Newsdata : ${qRest} req restantes aujourd'hui`:`⚠ Quota Newsdata atteint — news EN uniquement`;
+  const ndStatus=qRest>0?`Newsdata : ${qRest} req restantes aujourd'hui`:`⚠ Quota Newsdata atteint pour aujourd'hui`;
   const safetyHTML=`<div class="safety-note">🔒 ACHAT bloqué si : RSI > 75 · chute 5j > 8% · vol > 4%/j · DANGER si ≥ 2 alertes critiques<br>📊 Historique : ${nbHist}/${nbTotal} actifs · moy. ${avgPoints} j/actif · RSI actif sur ${nbRsi} symboles<br>📡 ${ndStatus}</div>`;
 
   const cards=MKTS.map(m=>{
