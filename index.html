@@ -223,7 +223,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.6</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.7</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -951,12 +951,12 @@ function renderGlobal(signals,NEWS,ms){
 /* ── Render prediction ── */
 function renderPrediction(signals,NEWS){
   const mktKw={
-    semi:/nvidia|amd|tsmc|chip|semi|gpu|sox|broadcom|asml|micron/i,
-    nasdaq:/nasdaq|apple|microsoft|meta|alphabet|google|tech|qqq/i,
-    europe:/total|airbus|lvmh|sanofi|bnp|loreal|cac|dax|euronext|europe/i,
-    petrole:/oil|crude|brent|wti|opec|iran|energy|barrel/i,
-    or:/gold|silver|metal|gld|xau|precious/i,
-    crypto:/bitcoin|btc|eth|ethereum|crypto|solana|xrp|blockchain/i,
+    semi:/nvidia|amd|tsmc|chip|semi|gpu|broadcom|asml|micron|semiconducteur|puce|intel|qualcomm/i,
+    nasdaq:/nasdaq|apple|microsoft|meta|alphabet|google|tech|qqq|amazon|tesla|silicon valley|big tech/i,
+    europe:/total|airbus|lvmh|sanofi|bnp|loreal|l'oréal|cac|dax|euronext|europe|bourse paris|bourse européen|stoxx/i,
+    petrole:/pétrole|pétrolier|brut|brent|wti|opec|barrel|baril|énergie|oil|crude|gaz naturel|raffin/i,
+    or:/or |gold|argent|silver|métal précieux|xau|gld|mines d'or|lingot|matière première/i,
+    crypto:/bitcoin|btc|ethereum|eth|crypto|solana|xrp|blockchain|actif numérique|monnaie numérique/i,
   };
   const mktCtx={
     semi:'Demande IA structurellement solide. Fed hawkish + tensions Taïwan = risques.',
@@ -988,7 +988,12 @@ function renderPrediction(signals,NEWS){
 
   const cards=MKTS_P.map(m=>{
     const s=signals[m.key];
-    const mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||n.detail||'')));
+    let mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||'')));
+    // Fallback : si moins de 2 news spécifiques, compléter avec news générales
+    if(mn.length<2){
+      const extra=NEWS.filter(n=>!mn.includes(n)).slice(0,5-mn.length);
+      mn=[...mn,...extra];
+    }
     const mb=mn.filter(n=>n.impact==='bull').length,mr=mn.filter(n=>n.impact==='bear').length;
     const ni=mb>mr?'bull':mr>mb?'bear':'neutral';
     const isDanger=s.sig==='DANGER',isVente=s.sig==='VENTE';
