@@ -223,7 +223,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.8</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.9</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -272,7 +272,7 @@ a{color:inherit;text-decoration:none;}
 
     <div class="footer">
       ⚠ Informatif uniquement — pas un conseil en investissement. Risque très élevé sur produits à levier.<br>
-      Sources : Finnhub · Binance · CoinGecko · Newsdata.io (FR)
+      Sources : Finnhub · Binance · CoinGecko · Newsdata.io (FR) · Finnhub (EN fallback)
     </div>
   </div><!-- /main -->
 </div>
@@ -512,48 +512,77 @@ async function fetchCrypto(){
   }catch{}
 }
 
-/* ── Newsdata.io uniquement — news FR natives, pas de traduction ── */
+/* ── News : Newsdata FR + Finnhub EN en fallback ── */
 const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
 
-async function fetchNews(useND=true){
-  if(!useND)return[];
+async function fetchNewsND(){
   const queries=[
-    'semiconducteurs nvidia amd intel bourse',
-    'nasdaq technologie apple microsoft meta alphabet',
-    'bourse europe cac dax airbus lvmh totalenergies bnp',
-    'petrole energie brut opec brent wti',
-    'or argent metaux precieux banque centrale',
+    'semiconducteurs nvidia amd bourse',
+    'nasdaq technologie apple microsoft meta',
+    'bourse europe cac airbus lvmh totalenergies',
+    'petrole brut opec brent energie',
+    'or argent metaux precieux inflation',
     'bitcoin ethereum crypto blockchain',
-    'federal reserve bce taux inflation economie',
-    'marches financiers wall street bourse actions',
+    'fed bce taux economie marches',
+    'wall street bourse actions indices',
   ];
   const all=[];
   await Promise.allSettled(queries.map(async q=>{
     try{
       const url=`https://newsdata.io/api/1/news?apikey=${ND}&q=${encodeURIComponent(q)}&language=fr&category=business&size=5`;
-      const r=await fetchT(url,7000);
-      if(!r.ok)return;
-      const d=await r.json();
-      if(d.results)all.push(...d.results);
+      const r=await fetchT(url,7000);if(!r.ok)return;
+      const d=await r.json();if(d.results)all.push(...d.results);
     }catch{}
   }));
   const seen=new Set();
   return all
-    .filter(n=>{
-      if(!n.title||seen.has(n.title))return false;
-      seen.add(n.title);return true;
-    })
+    .filter(n=>{if(!n.title||seen.has(n.title))return false;seen.add(n.title);return true;})
     .sort((a,b)=>new Date(b.pubDate||0)-new Date(a.pubDate||0))
     .slice(0,60)
     .map(n=>({
       impact:sentimentNews({headline:n.title,summary:n.description||''}),
-      titre:n.title||'',
-      resume:(n.description||'').slice(0,280),
-      source:n.source_id||n.source_name||'',
-      url:n.link||'',
+      titre:n.title||'',resume:(n.description||'').slice(0,280),
+      source:n.source_id||'',url:n.link||'',
       time:n.pubDate?new Date(n.pubDate).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
       lang:'fr',
     }));
+}
+
+async function fetchNewsFH(){
+  const syms=['NVDA','AMD','QQQ','AAPL','MSFT','META','GLD','USO','BTC','XOM'];
+  const all=[];
+  const to=new Date().toISOString().slice(0,10);
+  const from=new Date(Date.now()-3*86400000).toISOString().slice(0,10);
+  await Promise.allSettled(syms.map(sym=>
+    fetchT(fhUrl(`/company-news?symbol=${sym}&from=${from}&to=${to}`),6000)
+      .then(r=>r.json()).then(d=>{if(Array.isArray(d))all.push(...d.slice(0,4));}).catch(()=>{})
+  ));
+  const seen=new Set();
+  return all
+    .filter(n=>{if(!n.headline||seen.has(n.headline))return false;seen.add(n.headline);return true;})
+    .sort((a,b)=>b.datetime-a.datetime).slice(0,40)
+    .map(n=>({
+      impact:sentimentNews({headline:n.headline,summary:n.summary||''}),
+      titre:n.headline||'',resume:(n.summary||'').slice(0,280),
+      source:n.source||'',url:n.url||'',
+      time:n.datetime?new Date(n.datetime*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',
+      lang:'en',
+    }));
+}
+
+async function fetchNews(useND=true){
+  const [nd,fh]=await Promise.allSettled([
+    useND?fetchNewsND():Promise.resolve([]),
+    fetchNewsFH(),
+  ]);
+  const newsND=nd.status==='fulfilled'?nd.value:[];
+  const newsFH=fh.status==='fulfilled'?fh.value:[];
+  // FR en premier, EN en complément, dédoublonnage global
+  const seen=new Set();
+  return [...newsND,...newsFH].filter(n=>{
+    const k=n.titre.slice(0,60);
+    if(seen.has(k))return false;seen.add(k);return true;
+  });
 }
 
 /* ── Indicators ── */
@@ -993,16 +1022,21 @@ function renderPrediction(signals,NEWS){
     <div class="sent-stats"><span>${bullN.length} haussières</span><span>${bearN.length} baissières</span><span>${NEWS.length-bullN.length-bearN.length} neutres</span><span>${NEWS.length} actualités</span></div>
   </div>`;
 
+  const usedTitles=new Set(); // pool global — une actu ne s'affiche que dans 1 section
+
   const cards=MKTS_P.map(m=>{
     const s=signals[m.key];
-    let mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||'')));
-    // Fallback : si moins de 2 news spécifiques, compléter avec news générales non encore utilisées
-    if(mn.length<2){
-      const used=new Set(mn.map(n=>n.titre));
-      const extra=NEWS.filter(n=>!used.has(n.titre)).slice(0,5-mn.length);
+    // News spécifiques au marché, pas encore utilisées
+    let mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||''))&&!usedTitles.has(n.titre));
+    // Fallback : compléter avec news générales non encore utilisées dans aucune section
+    if(mn.length<3){
+      const specTitles=new Set(mn.map(n=>n.titre));
+      const extra=NEWS.filter(n=>!usedTitles.has(n.titre)&&!specTitles.has(n.titre)).slice(0,5-mn.length);
       mn=[...mn,...extra];
     }
     const mn5=mn.slice(0,5);
+    // Marquer ces news comme utilisées
+    mn5.forEach(n=>usedTitles.add(n.titre));
     const mb=mn5.filter(n=>n.impact==='bull').length,mr=mn5.filter(n=>n.impact==='bear').length;
     const ni=mb>mr?'bull':mr>mb?'bear':'neutral';
     const isDanger=s.sig==='DANGER',isVente=s.sig==='VENTE';
