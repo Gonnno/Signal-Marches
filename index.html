@@ -846,14 +846,14 @@ const LEVIER={
 
 function levierBadges(key,sig){
   const list=LEVIER[key]?.[sig]||LEVIER[key]?.['NEUTRE']||[];
-  if(!list.length)return`<div class="info-box">🚨 Signal DANGER — aucun levier recommandé.</div>`;
   const riskCls={'⚠ Très élevé':'r','Élevé':'a','Modéré':'dim','Faible':'g'};
-  return`<div class="tr-badges">
-    ${list.map(e=>`<span class="tr-badge">
-      <b>${e.n}</b> — ${e.d} <span class="${riskCls[e.risk]||'dim'}" style="font-size:10px;">${e.risk}</span>
-    </span>`).join('')}
-  </div>
-  <div class="info-box" style="margin-top:.4rem;">⚠ Les produits à levier amplifient les pertes. Toujours utiliser un stop-loss.</div>`;
+  if(!list.length)return'<div class="info-box">🚨 Signal DANGER — aucun levier recommandé.</div>';
+  const badges=list.map(e=>{
+    const rc=riskCls[e.risk]||'dim';
+    return`<span class="tr-badge"><b>${e.n}</b> — ${e.d} <span class="${rc}" style="font-size:10px;">${e.risk}</span></span>`;
+  }).join('');
+  return`<div class="tr-badges">${badges}</div><div class="info-box" style="margin-top:.4rem;">⚠ Produits à levier : risque de perte totale. Stop-loss obligatoire.</div>`;
+}
 
 const recoMap={
   semi:{ACHAT:"Semi-conducteurs en tendance haussière. 3SEM (×3) possible si score > 70 avec stop -7%.",VENTE:"Pression baissière sur les semi. Rester à l'écart ou couvrir.",DANGER:"Signal neutralisé. Aucune position recommandée.",NEUTRE:"Attendre un signal clair. Surveiller NVDA et TSMC."},
