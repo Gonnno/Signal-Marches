@@ -227,7 +227,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.10</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.11</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -534,20 +534,41 @@ async function fetchStocks(h,meta){
 async function fetchCrypto(){
   const pairs={BTC:'BTCUSDT',ETH:'ETHUSDT',SOL:'SOLUSDT',XRP:'XRPUSDT'};
   const labels={BTC:'Bitcoin',ETH:'Ethereum',SOL:'Solana',XRP:'XRP'};
+  const fhMap={BTC:'BINANCE:BTCUSDT',ETH:'BINANCE:ETHUSDT',SOL:'BINANCE:SOLUSDT',XRP:'BINANCE:XRPUSDT'};
+
+  // 1. Binance
   try{
     const syms=Object.values(pairs).map(s=>`"${s}"`).join(',');
     const r=await fetchT(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${syms}]&_t=${Date.now()}`,7000);
     if(!r.ok)throw 0;
     const arr=await r.json();
-    arr.forEach(d=>{const k=Object.keys(pairs).find(k=>pairs[k]===d.symbol);if(k)DATA[k]={label:labels[k],price:+d.lastPrice,prev:+d.prevClosePrice,pct:+d.priceChangePercent,ok:true,closes:[],source:'Binance'};});
-    return;
+    let ok=0;
+    arr.forEach(d=>{
+      const k=Object.keys(pairs).find(k=>pairs[k]===d.symbol);
+      if(k&&+d.lastPrice>0){DATA[k]={label:labels[k],price:+d.lastPrice,prev:+d.prevClosePrice,pct:+d.priceChangePercent,ok:true,closes:[],source:'Binance'};ok++;}
+    });
+    if(ok>=2)return;
   }catch{}
+
+  // 2. CoinGecko
   try{
     const r=await fetchT(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,ripple&vs_currencies=usd&include_24hr_change=true&_t=${Date.now()}`,7000);
+    if(!r.ok)throw 0;
     const d=await r.json();
     const map={bitcoin:'BTC',ethereum:'ETH',solana:'SOL',ripple:'XRP'};
-    Object.entries(map).forEach(([id,k])=>{if(d[id])DATA[k]={label:labels[k],price:d[id].usd,prev:null,pct:d[id].usd_24h_change,ok:true,closes:[],source:'CoinGecko'};});
+    let ok=0;
+    Object.entries(map).forEach(([id,k])=>{
+      if(d[id]?.usd){DATA[k]={label:labels[k],price:d[id].usd,prev:null,pct:d[id].usd_24h_change||null,ok:true,closes:[],source:'CoinGecko'};ok++;}
+    });
+    if(ok>=2)return;
   }catch{}
+
+  // 3. Finnhub (fallback ultime)
+  await Promise.allSettled(Object.entries(fhMap).map(async([k,sym])=>{
+    if(DATA[k]?.ok)return;
+    const q=await fhQuote(sym);
+    if(q)DATA[k]={label:labels[k],price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:'Finnhub'};
+  }));
 }
 
 /* ── News : Newsdata FR + Finnhub EN en fallback ── */
@@ -784,18 +805,55 @@ function choisirVedette(MKTS,signals){
   return{vedette,s,raisons,miniActifs};
 }
 
-const TR_EQUIV={
-  semi:[{n:'Amundi MSCI Robotics & AI',t:''},{n:'iShares Automation & Robotics',t:'RBOT'}],
-  nasdaq:[{n:'Amundi PEA Nasdaq-100',t:'PUST'}],
-  europe:[{n:'Amundi PEA CAC 40',t:'C40'}],
-  petrole:[{n:'Amundi MSCI World Energy',t:''}],
-  or:[{n:'Xtrackers Physical Gold',t:'XAD1'},{n:'iShares Gold Producers',t:''}],
-  crypto:[{n:'iShares Bitcoin (ETP)',t:''}],
+const LEVIER={
+  semi:{
+    ACHAT:[{n:'3SEM',d:'Semiconducteurs ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'SOXL',d:'SOXX ×3 (Direxion)',risk:'⚠ Très élevé'}],
+    NEUTRE:[{n:'SMH',d:'VanEck Semiconductors ETF',risk:'Modéré'}],
+    VENTE:[{n:'SOXS',d:'SOXX ×3 Short (Direxion)',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
+  nasdaq:{
+    ACHAT:[{n:'3QQQ / TQQQ',d:'Nasdaq-100 ×3',risk:'⚠ Très élevé'},{n:'QLD',d:'Nasdaq-100 ×2',risk:'Élevé'}],
+    NEUTRE:[{n:'QQQ',d:'Nasdaq-100 sans levier',risk:'Modéré'}],
+    VENTE:[{n:'SQQQ',d:'Nasdaq-100 ×3 Short',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
+  europe:{
+    ACHAT:[{n:'LVC',d:'CAC 40 ×2 (Lyxor)',risk:'Élevé'},{n:'3EUL',d:'Euro Stoxx 50 ×3',risk:'⚠ Très élevé'}],
+    NEUTRE:[{n:'C40 / PCAT',d:'CAC 40 sans levier (PEA)',risk:'Modéré'}],
+    VENTE:[{n:'BX4',d:'CAC 40 ×2 Short (BNP)',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
+  petrole:{
+    ACHAT:[{n:'3OIL',d:'WTI Crude ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'UCO',d:'WTI ×2 (ProShares)',risk:'Élevé'}],
+    NEUTRE:[{n:'USO',d:'WTI sans levier',risk:'Modéré'}],
+    VENTE:[{n:'SCO',d:'WTI ×2 Short (ProShares)',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
+  or:{
+    ACHAT:[{n:'3GOL',d:'Or ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'UGL',d:'Or ×2 (ProShares)',risk:'Élevé'}],
+    NEUTRE:[{n:'GLD / XAD1',d:'Or physique sans levier',risk:'Faible'}],
+    VENTE:[{n:'DZZ',d:'Or ×2 Short (DB)',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
+  crypto:{
+    ACHAT:[{n:'3BTC',d:'Bitcoin ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'MSTR',d:'MicroStrategy (proxy BTC)',risk:'Élevé'}],
+    NEUTRE:[{n:'IBIT / FBTC',d:'Bitcoin ETF spot',risk:'Élevé'}],
+    VENTE:[{n:'BITI',d:'Bitcoin Short (ProShares)',risk:'⚠ Très élevé'}],
+    DANGER:[],
+  },
 };
-function trBadges(key){
-  const list=TR_EQUIV[key];if(!list?.length)return'';
-  return`<div class="tr-badges">${list.map(e=>`<span class="tr-badge">📍 TR : ${e.n}${e.t?' ('+e.t+')':''}</span>`).join('')}</div>`;
-}
+
+function levierBadges(key,sig){
+  const list=LEVIER[key]?.[sig]||LEVIER[key]?.['NEUTRE']||[];
+  if(!list.length)return`<div class="info-box">🚨 Signal DANGER — aucun levier recommandé.</div>`;
+  const riskCls={'⚠ Très élevé':'r','Élevé':'a','Modéré':'dim','Faible':'g'};
+  return`<div class="tr-badges">
+    ${list.map(e=>`<span class="tr-badge">
+      <b>${e.n}</b> — ${e.d} <span class="${riskCls[e.risk]||'dim'}" style="font-size:10px;">${e.risk}</span>
+    </span>`).join('')}
+  </div>
+  <div class="info-box" style="margin-top:.4rem;">⚠ Les produits à levier amplifient les pertes. Toujours utiliser un stop-loss.</div>`;
 
 const recoMap={
   semi:{ACHAT:"Semi-conducteurs en tendance haussière. 3SEM (×3) possible si score > 70 avec stop -7%.",VENTE:"Pression baissière sur les semi. Rester à l'écart ou couvrir.",DANGER:"Signal neutralisé. Aucune position recommandée.",NEUTRE:"Attendre un signal clair. Surveiller NVDA et TSMC."},
@@ -1000,7 +1058,7 @@ function renderGlobal(signals,NEWS,ms){
           ${sparkRows}
         </div>
         <div class="reco">→ ${reco}</div>
-        ${trBadges(m.key)}
+        ${levierBadges(m.key,s.sig)}
         ${alertHTML}${warnHTML}
         ${s.nbBlocked>0?`<div class="info-box">🔒 ${s.nbBlocked}/${s.n} actif(s) avec filtre de sécurité actif</div>`:''}
       </div></div>
