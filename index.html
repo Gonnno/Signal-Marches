@@ -236,7 +236,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.13</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.14</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -1138,7 +1138,7 @@ function renderGlobal(signals,NEWS,ms){
           ${sparkRows}
         </div>
         <div class="reco">→ ${reco}</div>
-        ${selectionETF(m.key,s.sig,_NEWS.filter(n=>_mktKw[m.key]?.test((n.titre||'')+(n.resume||''))).slice(0,5))}
+        ${(s.sig==='ACHAT'||s.sig==='VENTE')?selectionETF(m.key,s.sig,_NEWS.filter(n=>_mktKw[m.key]?.test((n.titre||'')+(n.resume||''))).slice(0,5)):''}
         ${alertHTML}${warnHTML}
         ${s.nbBlocked>0?`<div class="info-box">🔒 ${s.nbBlocked}/${s.n} actif(s) avec filtre de sécurité actif</div>`:''}
       </div></div>
