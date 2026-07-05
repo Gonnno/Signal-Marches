@@ -177,6 +177,15 @@ a{color:inherit;text-decoration:none;}
 .sent-bar-labels{display:flex;justify-content:space-between;font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);}
 .sent-stats{display:flex;gap:.8rem;margin-top:.45rem;font:400 12px/1 'IBM Plex Mono',monospace;color:var(--tx2);flex-wrap:wrap;}
 
+.etf-section{margin-top:.5rem;}
+.etf-label{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--ac2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;}
+.etf-actu{font:400 10px/1.4 'IBM Plex Mono',monospace;color:var(--tx3);margin-bottom:.5rem;font-style:italic;}
+.etf-picks{display:flex;flex-direction:column;gap:6px;}
+.etf-pick{background:var(--sur2);border-radius:8px;padding:.6rem .8rem;border-left:3px solid var(--ac);}
+.etf-pick-name{font:600 12px/1.2 'Space Grotesk',sans-serif;color:var(--tx);margin-bottom:2px;}
+.etf-pick-ticker{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--ac2);margin-bottom:4px;}
+.etf-pick-raison{font:400 11px/1.4 'IBM Plex Mono',monospace;color:var(--tx2);}
+
 /* ── Footer ── */
 .footer{padding:.7rem 1.2rem;border-top:1px solid var(--brd);font:400 11px/1.7 'IBM Plex Mono',monospace;color:var(--tx3);}
 
@@ -227,7 +236,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.11</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.12</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -289,6 +298,14 @@ a{color:inherit;text-decoration:none;}
 const FH=[100,56,50,112,100,113,112,114,48,49,113,118,107,101,118,110,100,98,55,103,100,56,50,112,100,113,112,114,48,49,113,118,107,101,118,110,100,98,56,48].map(c=>String.fromCharCode(c)).join('');
 const DATA={};
 let _autoTimer=null,_signals=null,_NEWS=[];
+const _mktKw={
+  semi:/nvidia|amd|tsmc|chip|semi|gpu|broadcom|asml|micron|semiconducteur|puce|intel|qualcomm/i,
+  nasdaq:/nasdaq|apple|microsoft|meta|alphabet|google|tech|qqq|amazon|tesla|silicon valley|big tech/i,
+  europe:/total|airbus|lvmh|sanofi|bnp|loreal|l'oréal|cac|dax|euronext|europe|bourse paris|bourse européen|stoxx/i,
+  petrole:/pétrole|pétrolier|brut|brent|wti|opec|barrel|baril|énergie|oil|crude|gaz naturel|raffin/i,
+  or:/or |gold|argent|silver|métal précieux|xau|gld|mines d'or|lingot|matière première/i,
+  crypto:/bitcoin|btc|ethereum|eth|crypto|solana|xrp|blockchain|actif numérique|monnaie numérique/i,
+};
 
 /* ── Utils ── */
 const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -805,54 +822,117 @@ function choisirVedette(MKTS,signals){
   return{vedette,s,raisons,miniActifs};
 }
 
-const LEVIER={
+/* ── ETF Trade Republic par marché et signal ── */
+const TR_ETF={
   semi:{
-    ACHAT:[{n:'3SEM',d:'Semiconducteurs ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'SOXL',d:'SOXX ×3 (Direxion)',risk:'⚠ Très élevé'}],
-    NEUTRE:[{n:'SMH',d:'VanEck Semiconductors ETF',risk:'Modéré'}],
-    VENTE:[{n:'SOXS',d:'SOXX ×3 Short (Direxion)',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Exposition tech US large cap, NVDA/AMD en tête'},
+      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Diversification mondiale avec biais tech'},
+    ],
+    NEUTRE:[
+      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol World',raison:'Réduire le risque en période incertaine'},
+    ],
+    VENTE:[
+      {n:'MSCI USA Small Cap ESG Leaders',ticker:'Small Cap US',raison:'Éviter — small caps semi très sensibles à la baisse'},
+    ],
     DANGER:[],
   },
   nasdaq:{
-    ACHAT:[{n:'3QQQ / TQQQ',d:'Nasdaq-100 ×3',risk:'⚠ Très élevé'},{n:'QLD',d:'Nasdaq-100 ×2',risk:'Élevé'}],
-    NEUTRE:[{n:'QQQ',d:'Nasdaq-100 sans levier',risk:'Modéré'}],
-    VENTE:[{n:'SQQQ',d:'Nasdaq-100 ×3 Short',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Forte corrélation Nasdaq, exposition GAFAM directe'},
+      {n:'S&P 500 Market Leaders',ticker:'S&P 500 Leaders',raison:'Leaders du S&P concentrés sur la tech'},
+    ],
+    NEUTRE:[
+      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Dilue le risque Nasdaq avec exposition mondiale'},
+    ],
+    VENTE:[
+      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Refuge défensif si Nasdaq sous pression'},
+    ],
     DANGER:[],
   },
   europe:{
-    ACHAT:[{n:'LVC',d:'CAC 40 ×2 (Lyxor)',risk:'Élevé'},{n:'3EUL',d:'Euro Stoxx 50 ×3',risk:'⚠ Très élevé'}],
-    NEUTRE:[{n:'C40 / PCAT',d:'CAC 40 sans levier (PEA)',risk:'Modéré'}],
-    VENTE:[{n:'BX4',d:'CAC 40 ×2 Short (BNP)',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'STOXX European Market Leaders',ticker:'STOXX Leaders',raison:'Sélection des champions européens — momentum positif'},
+      {n:'MSCI EMU ESG Leaders',ticker:'MSCI EMU',raison:'Zone euro en tête, Airbus/LVMH bien pondérés'},
+    ],
+    NEUTRE:[
+      {n:'MSCI Europe ESG Leaders',ticker:'MSCI Europe',raison:'Europe large, bon équilibre risque/rendement'},
+    ],
+    VENTE:[
+      {n:'MSCI Europe ex EMU ESG Leaders',ticker:'Europe ex-EMU',raison:'Hors zone euro, moins exposé aux tensions BCE'},
+    ],
     DANGER:[],
   },
   petrole:{
-    ACHAT:[{n:'3OIL',d:'WTI Crude ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'UCO',d:'WTI ×2 (ProShares)',risk:'Élevé'}],
-    NEUTRE:[{n:'USO',d:'WTI sans levier',risk:'Modéré'}],
-    VENTE:[{n:'SCO',d:'WTI ×2 Short (ProShares)',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'STOXX Europe 600 Travel & Leisure',ticker:'Travel & Leisure',raison:'Corrélation pétrole/transport — profite des hausses WTI'},
+      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Énergie intégrée, XOM/CVX bien présents'},
+    ],
+    NEUTRE:[
+      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Atténue la volatilité des matières premières'},
+    ],
+    VENTE:[
+      {n:'MSCI Europe ESG Leaders Catholic Principles',ticker:'Europe Catholic',raison:'Peu exposé pétrole par exclusion sectorielle'},
+    ],
     DANGER:[],
   },
   or:{
-    ACHAT:[{n:'3GOL',d:'Or ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'UGL',d:'Or ×2 (ProShares)',risk:'Élevé'}],
-    NEUTRE:[{n:'GLD / XAD1',d:'Or physique sans levier',risk:'Faible'}],
-    VENTE:[{n:'DZZ',d:'Or ×2 Short (DB)',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol World',raison:'Refuge en période de stress — corrèle avec l\'or'},
+      {n:'MSCI Emerging Markets ex China ESG Leaders',ticker:'EM ex China',raison:'Économies exportatrices d\'or (Afrique du Sud, Brésil)'},
+    ],
+    NEUTRE:[
+      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Exposition globale, mines d\'or incluses'},
+    ],
+    VENTE:[
+      {n:'S&P 500 Market Leaders',ticker:'S&P 500 Leaders',raison:'Rotation vers actions si l\'or cède du terrain'},
+    ],
     DANGER:[],
   },
   crypto:{
-    ACHAT:[{n:'3BTC',d:'Bitcoin ×3 (WisdomTree)',risk:'⚠ Très élevé'},{n:'MSTR',d:'MicroStrategy (proxy BTC)',risk:'Élevé'}],
-    NEUTRE:[{n:'IBIT / FBTC',d:'Bitcoin ETF spot',risk:'Élevé'}],
-    VENTE:[{n:'BITI',d:'Bitcoin Short (ProShares)',risk:'⚠ Très élevé'}],
+    ACHAT:[
+      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Tech US corrèle fortement avec crypto en phase haussière'},
+      {n:'S&P 400 US Mid Cap Leaders',ticker:'Mid Cap US',raison:'Mid caps fintech exposées à la blockchain'},
+    ],
+    NEUTRE:[
+      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Attendre un signal clair — rester diversifié'},
+    ],
+    VENTE:[
+      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Refuge défensif si crypto corrige'},
+    ],
     DANGER:[],
   },
 };
 
-function levierBadges(key,sig){
-  const list=LEVIER[key]?.[sig]||LEVIER[key]?.['NEUTRE']||[];
-  const riskCls={'⚠ Très élevé':'r','Élevé':'a','Modéré':'dim','Faible':'g'};
-  if(!list.length)return'<div class="info-box">🚨 Signal DANGER — aucun levier recommandé.</div>';
-  const badges=list.map(e=>{
-    const rc=riskCls[e.risk]||'dim';
-    return`<span class="tr-badge"><b>${e.n}</b> — ${e.d} <span class="${rc}" style="font-size:10px;">${e.risk}</span></span>`;
-  }).join('');
-  return`<div class="tr-badges">${badges}</div><div class="info-box" style="margin-top:.4rem;">⚠ Produits à levier : risque de perte totale. Stop-loss obligatoire.</div>`;
+function selectionETF(key,sig,newsItems){
+  const candidates=TR_ETF[key]?.[sig]||TR_ETF[key]?.['NEUTRE']||[];
+  if(!candidates.length)return'<div class="info-box">🚨 Signal DANGER — rester en cash, aucune position recommandée.</div>';
+
+  // Scorer chaque ETF selon les actus : bull actu → favorise ACHAT, bear actu → favorise défensif
+  const bullScore=newsItems.filter(n=>n.impact==='bull').length;
+  const bearScore=newsItems.filter(n=>n.impact==='bear').length;
+  const sentiment=bullScore>bearScore?'bull':bearScore>bullScore?'bear':'neutral';
+
+  // Choisir 1-2 ETF selon le sentiment
+  let picks=candidates.slice(0,sentiment==='bull'?2:1);
+
+  // Justification actu
+  const actuRef=newsItems[0]?.titre?`Basé sur : « ${newsItems[0].titre.slice(0,60)}… »`:'';
+  const sentTxt=sentiment==='bull'?'sentiment haussier':'sentiment baissier ou neutre';
+
+  const badges=picks.map(e=>`
+    <div class="etf-pick">
+      <div class="etf-pick-name">${e.n}</div>
+      <div class="etf-pick-ticker">${e.ticker}</div>
+      <div class="etf-pick-raison">${e.raison}</div>
+    </div>`).join('');
+
+  return`<div class="etf-section">
+    <div class="etf-label">📊 Sélection Trade Republic · ${sentTxt}</div>
+    ${actuRef?`<div class="etf-actu">${actuRef}</div>`:''}
+    <div class="etf-picks">${badges}</div>
+    <div class="info-box" style="margin-top:.5rem;">⚠ ETF sans levier — adapté aux profils modérés. Pas un conseil en investissement.</div>
+  </div>`;
 }
 
 const recoMap={
@@ -1058,7 +1138,7 @@ function renderGlobal(signals,NEWS,ms){
           ${sparkRows}
         </div>
         <div class="reco">→ ${reco}</div>
-        ${levierBadges(m.key,s.sig)}
+        ${selectionETF(m.key,s.sig,_NEWS.filter(n=>_mktKw[m.key]?.test((n.titre||'')+(n.resume||''))).slice(0,5))}
         ${alertHTML}${warnHTML}
         ${s.nbBlocked>0?`<div class="info-box">🔒 ${s.nbBlocked}/${s.n} actif(s) avec filtre de sécurité actif</div>`:''}
       </div></div>
@@ -1082,14 +1162,7 @@ function renderGlobal(signals,NEWS,ms){
 
 /* ── Render prediction ── */
 function renderPrediction(signals,NEWS){
-  const mktKw={
-    semi:/nvidia|amd|tsmc|chip|semi|gpu|broadcom|asml|micron|semiconducteur|puce|intel|qualcomm/i,
-    nasdaq:/nasdaq|apple|microsoft|meta|alphabet|google|tech|qqq|amazon|tesla|silicon valley|big tech/i,
-    europe:/total|airbus|lvmh|sanofi|bnp|loreal|l'oréal|cac|dax|euronext|europe|bourse paris|bourse européen|stoxx/i,
-    petrole:/pétrole|pétrolier|brut|brent|wti|opec|barrel|baril|énergie|oil|crude|gaz naturel|raffin/i,
-    or:/or |gold|argent|silver|métal précieux|xau|gld|mines d'or|lingot|matière première/i,
-    crypto:/bitcoin|btc|ethereum|eth|crypto|solana|xrp|blockchain|actif numérique|monnaie numérique/i,
-  };
+  const mktKw=_mktKw;
   const mktCtx={
     semi:'Demande IA structurellement solide. Fed hawkish + tensions Taïwan = risques.',
     nasdaq:"Surveiller le dollar US — Nasdaq hedgé EUR recommandé.",
