@@ -167,7 +167,9 @@ a{color:inherit;text-decoration:none;}
 .news-title{font:500 13px/1.4 'Space Grotesk',sans-serif;color:var(--tx);margin-bottom:2px;}
 .news-sum{font:400 12px/1.5 'IBM Plex Mono',monospace;color:var(--tx2);margin-bottom:3px;}
 .news-meta{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);display:flex;gap:6px;}
-.news-link{color:var(--ac2);}
+.gnews-btn{display:block;margin-top:.6rem;padding:.45rem .7rem;background:var(--sur2);border-radius:7px;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--ac2);text-align:center;transition:background .15s;border:1px solid rgba(124,109,250,.2);}
+.gnews-btn:hover{background:var(--sur3);}
+.news-link{color:var(--ac2);font-size:10px;}
 
 /* ── Sent bar ── */
 .sent-bar-wrap{background:var(--sur);border:1px solid var(--brd);border-radius:11px;padding:.85rem 1rem;margin-bottom:.9rem;}
@@ -236,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.14</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.17</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -305,6 +307,7 @@ const _mktKw={
   petrole:/pétrole|pétrolier|brut|brent|wti|opec|barrel|baril|énergie|oil|crude|gaz naturel|raffin/i,
   or:/or |gold|argent|silver|métal précieux|xau|gld|mines d'or|lingot|matière première/i,
   crypto:/bitcoin|btc|ethereum|eth|crypto|solana|xrp|blockchain|actif numérique|monnaie numérique/i,
+  matieres:/café|coffee|blé|wheat|sucre|sugar|gaz naturel|natural gas|cuivre|copper|maïs|corn|matière première|commodit|agricol|récolte|harvest|sécheresse|drought/i,
 };
 
 /* ── Utils ── */
@@ -518,7 +521,10 @@ const STOCKS_FH={
   GLD:{fh:'GLD',label:'GLD/Or'},SLV:{fh:'SLV',label:'Argent'},GDX:{fh:'GDX',label:'Minières Or'},
   'TTE.PA':{fh:'TTE',label:'TotalEnergies'},'AIR.PA':{fh:'AIR',label:'Airbus'},'LVMH.PA':{fh:'MC',label:'LVMH'},
   'SAN.PA':{fh:'SAN',label:'Sanofi'},'BNP.PA':{fh:'BNP',label:'BNP Paribas'},'OR.PA':{fh:'OR',label:"L'Oréal"},
-  BOTZ:{fh:'BOTZ',label:'IA/Robotique',radar:true},ARKK:{fh:'ARKK',label:'ARK Innov.',radar:true},ITA:{fh:'ITA',label:'Défense',radar:true},
+  // Matières premières agricoles & industrielles
+  WEAT:{fh:'WEAT',label:'Blé'},CORN:{fh:'CORN',label:'Maïs'},DBA:{fh:'DBA',label:'Agri ETF'},
+  COPX:{fh:'COPX',label:'Cuivre/Mines'},JO:{fh:'JO',label:'Café'},CANE:{fh:'CANE',label:'Sucre'},
+  UNG:{fh:'UNG',label:'Gaz naturel'},ARKK:{fh:'ARKK',label:'ARK Innov.',radar:true},ITA:{fh:'ITA',label:'Défense',radar:true},
   ICLN:{fh:'ICLN',label:'Énergie propre',radar:true},XBI:{fh:'XBI',label:'Biotech',radar:true},HACK:{fh:'HACK',label:'Cybersécurité',radar:true},
   TQQQ:{fh:'TQQQ',label:'Nasdaq ×3',radar:true},SOXL:{fh:'SOXL',label:'Semis ×3',radar:true},UVXY:{fh:'UVXY',label:'Vol. VIX',radar:true},
   JETS:{fh:'JETS',label:'Airlines',radar:true},KWEB:{fh:'KWEB',label:'Tech Chine',radar:true},SMH:{fh:'SMH',label:'Semi-conducteurs',radar:true},
@@ -822,116 +828,61 @@ function choisirVedette(MKTS,signals){
   return{vedette,s,raisons,miniActifs};
 }
 
-/* ── ETF Trade Republic par marché et signal ── */
-const TR_ETF={
-  semi:{
-    ACHAT:[
-      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Exposition tech US large cap, NVDA/AMD en tête'},
-      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Diversification mondiale avec biais tech'},
-    ],
-    NEUTRE:[
-      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol World',raison:'Réduire le risque en période incertaine'},
-    ],
-    VENTE:[
-      {n:'MSCI USA Small Cap ESG Leaders',ticker:'Small Cap US',raison:'Éviter — small caps semi très sensibles à la baisse'},
-    ],
-    DANGER:[],
-  },
-  nasdaq:{
-    ACHAT:[
-      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Forte corrélation Nasdaq, exposition GAFAM directe'},
-      {n:'S&P 500 Market Leaders',ticker:'S&P 500 Leaders',raison:'Leaders du S&P concentrés sur la tech'},
-    ],
-    NEUTRE:[
-      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Dilue le risque Nasdaq avec exposition mondiale'},
-    ],
-    VENTE:[
-      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Refuge défensif si Nasdaq sous pression'},
-    ],
-    DANGER:[],
-  },
-  europe:{
-    ACHAT:[
-      {n:'STOXX European Market Leaders',ticker:'STOXX Leaders',raison:'Sélection des champions européens — momentum positif'},
-      {n:'MSCI EMU ESG Leaders',ticker:'MSCI EMU',raison:'Zone euro en tête, Airbus/LVMH bien pondérés'},
-    ],
-    NEUTRE:[
-      {n:'MSCI Europe ESG Leaders',ticker:'MSCI Europe',raison:'Europe large, bon équilibre risque/rendement'},
-    ],
-    VENTE:[
-      {n:'MSCI Europe ex EMU ESG Leaders',ticker:'Europe ex-EMU',raison:'Hors zone euro, moins exposé aux tensions BCE'},
-    ],
-    DANGER:[],
-  },
-  petrole:{
-    ACHAT:[
-      {n:'STOXX Europe 600 Travel & Leisure',ticker:'Travel & Leisure',raison:'Corrélation pétrole/transport — profite des hausses WTI'},
-      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Énergie intégrée, XOM/CVX bien présents'},
-    ],
-    NEUTRE:[
-      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Atténue la volatilité des matières premières'},
-    ],
-    VENTE:[
-      {n:'MSCI Europe ESG Leaders Catholic Principles',ticker:'Europe Catholic',raison:'Peu exposé pétrole par exclusion sectorielle'},
-    ],
-    DANGER:[],
-  },
-  or:{
-    ACHAT:[
-      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol World',raison:'Refuge en période de stress — corrèle avec l\'or'},
-      {n:'MSCI Emerging Markets ex China ESG Leaders',ticker:'EM ex China',raison:'Économies exportatrices d\'or (Afrique du Sud, Brésil)'},
-    ],
-    NEUTRE:[
-      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Exposition globale, mines d\'or incluses'},
-    ],
-    VENTE:[
-      {n:'S&P 500 Market Leaders',ticker:'S&P 500 Leaders',raison:'Rotation vers actions si l\'or cède du terrain'},
-    ],
-    DANGER:[],
-  },
-  crypto:{
-    ACHAT:[
-      {n:'MSCI USA ESG Leaders',ticker:'MSCI USA',raison:'Tech US corrèle fortement avec crypto en phase haussière'},
-      {n:'S&P 400 US Mid Cap Leaders',ticker:'Mid Cap US',raison:'Mid caps fintech exposées à la blockchain'},
-    ],
-    NEUTRE:[
-      {n:'MSCI World ESG Leaders',ticker:'MSCI World',raison:'Attendre un signal clair — rester diversifié'},
-    ],
-    VENTE:[
-      {n:'Factor MSCI World Minimum Volatility ESG Leaders',ticker:'Min Vol',raison:'Refuge défensif si crypto corrige'},
-    ],
-    DANGER:[],
-  },
+/* ── Sous-jacents volatils Trade Republic (3x levier disponible) ── */
+const TR_VOLATILS=[
+  {n:'PHLX Semiconductor',isin:'XS3091657729',tags:['semi','nasdaq'],raison:'Plus volatil que le Nasdaq — hypersensible géopolitique Taïwan/export controls'},
+  {n:'Nasdaq 100',isin:'IE00BLRPRL42',tags:['nasdaq','semi'],raison:'Mega caps tech, sensible aux résultats trimestriels et aux taux Fed'},
+  {n:'WTI Crude Oil',isin:'IE00BMTM6B32',tags:['petrole'],raison:'OPEP+, tensions Moyen-Orient, offre/demande mondiale'},
+  {n:'Natural Gas',isin:'XS2819843900',tags:['petrole','matieres'],raison:'Le plus volatil des classiques — stockage saisonnier, météo, demande industrielle'},
+  {n:'Silver',isin:'XS3306516876',tags:['or','matieres'],raison:'Marché plus petit et spéculatif que l\'or — mouvements amplifiés'},
+  {n:'Copper',isin:'IE00B8JVMZ80',tags:['or','europe','matieres'],raison:'Baromètre industriel mondial, sensible à la Chine et transition énergétique'},
+  {n:'Coffee',isin:'JE00BYQY3Z98',tags:['matieres'],raison:'Gel/sécheresse Brésil, récolte Vietnam — marché étroit, pics violents'},
+  {n:'Sugar',isin:'JE00BYQY7H96',tags:['matieres'],raison:'Politiques export Inde/Brésil, corrélé à l\'éthanol'},
+  {n:'Wheat',isin:'JE00BYQY8102',tags:['europe','matieres'],raison:'Tensions géopolitiques (Ukraine), aléas climatiques mondiaux'},
+  {n:'Emerging Markets',isin:'IE00BYTYHN28',tags:['crypto'],raison:'Cumul risques change + géopolitique + flux de capitaux'},
+];
+
+const GNEWS_QUERIES={
+  semi:'semiconducteurs+bourse',
+  nasdaq:'nasdaq+bourse+tech',
+  europe:'bourse+europe+cac',
+  petrole:'pétrole+bourse+énergie',
+  or:'or+bourse+métaux',
+  crypto:'bitcoin+crypto+bourse',
+  matieres:'matières+premières+bourse',
 };
-
+function gnewsUrl(key){
+  const q=GNEWS_QUERIES[key]||'bourse+marchés';
+  return`https://news.google.com/search?q=${q}&hl=fr&gl=FR&ceid=FR:fr&as_qdr=d&tbs=qdr:d,sbd:1`;
+}
 function selectionETF(key,sig,newsItems){
-  const candidates=TR_ETF[key]?.[sig]||TR_ETF[key]?.['NEUTRE']||[];
-  if(!candidates.length)return'<div class="info-box">🚨 Signal DANGER — rester en cash, aucune position recommandée.</div>';
+  // Filtrer les sous-jacents pertinents pour ce marché
+  const pertinents=TR_VOLATILS.filter(s=>s.tags.includes(key));
+  const autres=TR_VOLATILS.filter(s=>!s.tags.includes(key));
+  const pool=[...pertinents,...autres];
 
-  // Scorer chaque ETF selon les actus : bull actu → favorise ACHAT, bear actu → favorise défensif
+  // Scorer selon les actus
   const bullScore=newsItems.filter(n=>n.impact==='bull').length;
   const bearScore=newsItems.filter(n=>n.impact==='bear').length;
   const sentiment=bullScore>bearScore?'bull':bearScore>bullScore?'bear':'neutral';
 
-  // Choisir 1-2 ETF selon le sentiment
-  let picks=candidates.slice(0,sentiment==='bull'?2:1);
+  // ACHAT → 2 sous-jacents les plus corrélés, VENTE → 1 défensif/court
+  const picks=pool.slice(0,sig==='ACHAT'?2:1);
 
-  // Justification actu
-  const actuRef=newsItems[0]?.titre?`Basé sur : « ${newsItems[0].titre.slice(0,60)}… »`:'';
-  const sentTxt=sentiment==='bull'?'sentiment haussier':'sentiment baissier ou neutre';
+  const actuRef=newsItems[0]?.titre?`« ${newsItems[0].titre.slice(0,70)}… »`:'';
+  const sentTxt=sentiment==='bull'?'🟢 haussier':sentiment==='bear'?'🔴 baissier':'🟡 neutre';
 
   const badges=picks.map(e=>`
     <div class="etf-pick">
-      <div class="etf-pick-name">${e.n}</div>
-      <div class="etf-pick-ticker">${e.ticker}</div>
+      <div class="etf-pick-name">${e.n} <span style="font:400 10px/1 'IBM Plex Mono',monospace;color:var(--tx3);">${e.isin}</span></div>
       <div class="etf-pick-raison">${e.raison}</div>
     </div>`).join('');
 
   return`<div class="etf-section">
-    <div class="etf-label">📊 Sélection Trade Republic · ${sentTxt}</div>
+    <div class="etf-label">⚡ Sous-jacent(s) volatil(s) · sentiment ${sentTxt}</div>
     ${actuRef?`<div class="etf-actu">${actuRef}</div>`:''}
     <div class="etf-picks">${badges}</div>
-    <div class="info-box" style="margin-top:.5rem;">⚠ ETF sans levier — adapté aux profils modérés. Pas un conseil en investissement.</div>
+    <div class="info-box" style="margin-top:.5rem;">⚠ Produits ×3 — risque de perte totale en cas de retournement. Stop-loss obligatoire.</div>
   </div>`;
 }
 
@@ -942,6 +893,7 @@ const recoMap={
   petrole:{ACHAT:"WTI bien orienté. XOM/CVX en momentum positif.",VENTE:"Pétrole en baisse. OPEC incertain.",DANGER:"Géopolitique ou chute abrupte — éviter.",NEUTRE:"Attendre confirmation OPEC / USD."},
   or:{ACHAT:"Or en refuge. GLD solide. Corrélation inverse USD.",VENTE:"Prise de profit possible sur or.",DANGER:"Volatilité or élevée — prudence.",NEUTRE:"Consolidation. Surveiller les taux réels."},
   crypto:{ACHAT:"Crypto haussier. BTC/ETH momentum positif.",VENTE:"Marché baissier crypto. Attention levier.",DANGER:"Krach crypto probable. Stop immédiat recommandé.",NEUTRE:"Volatilité ×3 vs actions. Biais neutre."},
+  matieres:{ACHAT:"Matières premières en hausse. Coffee et Wheat en tête — surveiller météo et géopolitique.",VENTE:"Pression sur les commodités. Récoltes abondantes ou demande faible.",DANGER:"Volatilité extrême sur les matières premières. Aucune position.",NEUTRE:"Marchés agricoles en consolidation. Attendre un catalyseur clair."},
 };
 
 function step(p,t){document.getElementById('lf').style.width=p+'%';document.getElementById('lt').textContent=t;return new Promise(r=>setTimeout(r,80));}
@@ -999,6 +951,7 @@ async function analyserTout(){
       petrole:computeSignal(['USO','XOM','CVX','OXY']),
       or:computeSignal(['GLD','SLV','GDX']),
       crypto:computeSignal(['BTC','ETH','SOL','XRP']),
+      matieres:computeSignal(['WEAT','JO','CANE','UNG','COPX']),
       radar:computeRadarVolatilite(),
     };
     _signals=signals;
@@ -1049,6 +1002,7 @@ function renderGlobal(signals,NEWS,ms){
     {key:'petrole',icon:'🛢️',label:'Pétrole & Énergie',sub:'USO/WTI · ExxonMobil · Chevron · Occidental',open:ms.petrole,horaire:'CME Futures 24h/5j',keys:['USO','XOM','CVX','OXY'],labels:['USO/WTI','ExxonMobil','Chevron','Occidental']},
     {key:'or',icon:'🥇',label:'Or & Métaux',sub:'GLD · Argent · Minières Or',open:ms.or,horaire:'Comex lun–ven',keys:['GLD','SLV','GDX'],labels:['GLD/Or','SLV/Argent','GDX/Minières']},
     {key:'crypto',icon:'₿',label:'Crypto',sub:'Bitcoin · Ethereum · Solana · XRP',open:ms.crypto,horaire:'24h / 7j',keys:['BTC','ETH','SOL','XRP'],labels:['Bitcoin','Ethereum','Solana','XRP']},
+    {key:'matieres',icon:'🌾',label:'Matières premières',sub:'Blé · Café · Sucre · Gaz naturel · Cuivre',open:ms.nasdaq,horaire:'CME lun–ven',keys:['WEAT','JO','CANE','UNG','COPX'],labels:['Blé','Café','Sucre','Gaz naturel','Cuivre']},
     {key:'radar',icon:'⚡',label:'Radar Volatilité',sub:'Scan auto — ETF les plus agités',open:ms.nasdaq,horaire:'NYSE 15h30–22h',keys:[],labels:[],isRadar:true},
   ];
 
@@ -1170,6 +1124,7 @@ function renderPrediction(signals,NEWS){
     petrole:'Géopolitique Iran/Ormuz = volatilité. Surveiller OPEC.',
     or:'Refuge en tensions. Corrélation inverse dollar.',
     crypto:'Corrèle avec le Nasdaq. Volatilité ×3 vs actions.',
+    matieres:'Coffee et Wheat : marchés étroits, très sensibles météo/géopolitique. Natural Gas : saisonnier.',
   };
   const MKTS_P=[
     {key:'semi',icon:'🔬',label:'Semi-conducteurs'},
@@ -1178,6 +1133,7 @@ function renderPrediction(signals,NEWS){
     {key:'petrole',icon:'🛢️',label:'Pétrole & Énergie'},
     {key:'or',icon:'🥇',label:'Or & Métaux'},
     {key:'crypto',icon:'₿',label:'Crypto'},
+    {key:'matieres',icon:'🌾',label:'Matières premières'},
   ];
 
   const bullN=NEWS.filter(n=>n.impact==='bull'),bearN=NEWS.filter(n=>n.impact==='bear');
@@ -1226,10 +1182,11 @@ function renderPrediction(signals,NEWS){
       ?`Pas d'actualité. Signal : <b>${s.sig}</b> (${fmtScore(s.H)}/100). ${mktCtx[m.key]}`
       :`${nbSpec>0?nbSpec+' actu(s) spécifique(s)':'Actualités générales'} — sentiment ${niIcon} <b>${niTxt}</b>. « ${mn5[0].titre} ». ${mktCtx[m.key]} ${action}`;
     const alertHTML=s.alerts?.length?`<div class="alert-box" style="margin-bottom:.4rem;">${s.alerts.map(a=>`⚠ <b>${a.label}</b> : ${a.msg}`).join('<br>')}</div>`:'';
-    const newsHTML=mn5.map(n=>`<a class="news-item ${n.impact}" href="${n.url||'#'}" target="_blank" rel="noopener noreferrer">
+    const gUrl=gnewsUrl(m.key);
+    const newsHTML=mn5.map(n=>`<a class="news-item ${n.impact}" href="${gUrl}" target="_blank" rel="noopener noreferrer">
       <div class="news-title">${n.titre}</div>
       ${n.resume?`<div class="news-sum">${n.resume}</div>`:''}
-      <div class="news-meta"><span>${n.source||''}</span>${n.time?`<span>· ${n.time}</span>`:''}${n.url?`<span class="news-link">↗</span>`:''}</div>
+      <div class="news-meta"><span>${n.source||''}</span>${n.time?`<span>· ${n.time}</span>`:''}<span class="news-link">↗ Google Actus</span></div>
     </a>`).join('');
     return`<div class="pred-card">
       <div class="pred-head">
@@ -1243,6 +1200,7 @@ function renderPrediction(signals,NEWS){
       </div>
       <div class="pred-concl">${concl}</div>
       ${alertHTML}${newsHTML}
+      <a href="${gUrl}" target="_blank" rel="noopener noreferrer" class="gnews-btn">↗ Toutes les actus ${m.label} (24h)</a>
     </div>`;
   }).join('');
 
