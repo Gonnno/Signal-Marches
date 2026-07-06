@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.17</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.18</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -843,17 +843,17 @@ const TR_VOLATILS=[
 ];
 
 const GNEWS_QUERIES={
-  semi:'semiconducteurs+bourse',
+  semi:'semi+conducteurs+bourse',
   nasdaq:'nasdaq+bourse+tech',
-  europe:'bourse+europe+cac',
+  europe:'bourse+europe+cac+dax',
   petrole:'pétrole+bourse+énergie',
-  or:'or+bourse+métaux',
+  or:'or+bourse+métaux+précieux',
   crypto:'bitcoin+crypto+bourse',
-  matieres:'matières+premières+bourse',
+  matieres:'matières+premières+bourse+café+blé',
 };
 function gnewsUrl(key){
-  const q=GNEWS_QUERIES[key]||'bourse+marchés';
-  return`https://news.google.com/search?q=${q}&hl=fr&gl=FR&ceid=FR:fr&as_qdr=d&tbs=qdr:d,sbd:1`;
+  const q=GNEWS_QUERIES[key]||'bourse+marchés+financiers';
+  return`https://www.google.com/search?q=${q}&num=10&tbs=qdr%3Ad%2Csbd%3A1&tbm=nws`;
 }
 function selectionETF(key,sig,newsItems){
   // Filtrer les sous-jacents pertinents pour ce marché
