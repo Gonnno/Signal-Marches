@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.18</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.19</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -1136,58 +1136,22 @@ function renderPrediction(signals,NEWS){
     {key:'matieres',icon:'🌾',label:'Matières premières'},
   ];
 
-  const bullN=NEWS.filter(n=>n.impact==='bull'),bearN=NEWS.filter(n=>n.impact==='bear');
-  const tot=bullN.length+bearN.length,conf=tot>0?Math.round(bullN.length/tot*100):50;
-  const sentCls=conf>=60?'g':conf<=40?'r':'a';
-  const sentTxt=conf>=60?'Haussier':conf<=40?'Baissier':'Incertain';
-  const sentHTML=`<div class="sent-bar-wrap">
-    <div class="sent-bar-title"><span>🗞 Sentiment actualités</span><span class="badge ${badgeCls(sentTxt==='Haussier'?'ACHAT':sentTxt==='Baissier'?'VENTE':'NEUTRE')}">${sentTxt}</span></div>
-    <div class="sent-bar-track"><div class="sent-bar-fill" style="width:${conf}%;background:${conf>=60?'var(--gr)':conf<=40?'var(--rd)':'var(--am)'};"></div></div>
-    <div class="sent-bar-labels"><span class="r">Baissier</span><span class="${sentCls}">${conf}%</span><span class="g">Haussier</span></div>
-    <div class="sent-stats"><span>${bullN.length} haussières</span><span>${bearN.length} baissières</span><span>${NEWS.length-bullN.length-bearN.length} neutres</span><span>${NEWS.length} actualités</span></div>
-  </div>`;
-
-  const usedTitles=new Set(); // pool global — une actu ne s'affiche que dans 1 section
-
   const cards=MKTS_P.map(m=>{
     const s=signals[m.key];
     // News spécifiques au marché, pas encore utilisées
-    let mn=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||''))&&!usedTitles.has(n.titre));
-    // Fallback : compléter avec news générales non encore utilisées dans aucune section
-    if(mn.length<3){
-      const specTitles=new Set(mn.map(n=>n.titre));
-      const extra=NEWS.filter(n=>!usedTitles.has(n.titre)&&!specTitles.has(n.titre)).slice(0,5-mn.length);
-      mn=[...mn,...extra];
-    }
-    const mn5=mn.slice(0,5);
-    // Marquer ces news comme utilisées
-    mn5.forEach(n=>usedTitles.add(n.titre));
-    const mb=mn5.filter(n=>n.impact==='bull').length,mr=mn5.filter(n=>n.impact==='bear').length;
-    const ni=mb>mr?'bull':mr>mb?'bear':'neutral';
     const isDanger=s.sig==='DANGER',isVente=s.sig==='VENTE';
-    const niEff=(isDanger||isVente)&&ni==='bull'?'neutral':ni;
-    const niTxt=niEff==='bull'?'haussier':niEff==='bear'?'baissier':'prudent';
-    const niIcon=niEff==='bull'?'🟢':niEff==='bear'?'🔴':'🟡';
-    let fH=mn5.length>0?Math.round(s.H*0.65+(ni==='bull'?72:ni==='bear'?28:50)*0.35):s.H;
+    let fH=s.H;
     if(isDanger||isVente)fH=Math.min(fH,45);
     const fsSafe=isDanger?'DANGER':fH>=60?'ACHAT':fH<=42?'VENTE':'NEUTRE';
     let est24h,est1sem,estCls;
     if(isDanger){est24h='imprédictible';est1sem='imprédictible';estCls='a';}
-    else if(isVente||fsSafe==='VENTE'){est24h='de -1% à -4%';est1sem='de -2% à -8%';estCls='r';}
+    else if(fsSafe==='VENTE'){est24h='de -1% à -4%';est1sem='de -2% à -8%';estCls='r';}
     else if(fsSafe==='ACHAT'){const amp=fH>=70?4:2;est24h=`de 0% à +${amp}%`;est1sem=`de +1% à +${amp*2}%`;estCls='g';}
     else{est24h='de -1% à +1%';est1sem='de -2% à +2%';estCls='dim';}
     const action=fsSafe==='ACHAT'?'<b>→ Conditions favorables.</b>':fsSafe==='DANGER'?'<b>→ 🚨 Ne pas intervenir.</b>':fsSafe==='VENTE'?'<b>→ Pression vendeuse confirmée.</b>':'<b>→ Attendre confirmation.</b>';
-    const nbSpec=NEWS.filter(n=>mktKw[m.key].test((n.titre||'')+(n.resume||''))).length;
-    const concl=mn5.length===0
-      ?`Pas d'actualité. Signal : <b>${s.sig}</b> (${fmtScore(s.H)}/100). ${mktCtx[m.key]}`
-      :`${nbSpec>0?nbSpec+' actu(s) spécifique(s)':'Actualités générales'} — sentiment ${niIcon} <b>${niTxt}</b>. « ${mn5[0].titre} ». ${mktCtx[m.key]} ${action}`;
+    const concl=`Signal : <b>${s.sig}</b> (${fmtScore(s.H)}/100). ${mktCtx[m.key]} ${action}`;
     const alertHTML=s.alerts?.length?`<div class="alert-box" style="margin-bottom:.4rem;">${s.alerts.map(a=>`⚠ <b>${a.label}</b> : ${a.msg}`).join('<br>')}</div>`:'';
     const gUrl=gnewsUrl(m.key);
-    const newsHTML=mn5.map(n=>`<a class="news-item ${n.impact}" href="${gUrl}" target="_blank" rel="noopener noreferrer">
-      <div class="news-title">${n.titre}</div>
-      ${n.resume?`<div class="news-sum">${n.resume}</div>`:''}
-      <div class="news-meta"><span>${n.source||''}</span>${n.time?`<span>· ${n.time}</span>`:''}<span class="news-link">↗ Google Actus</span></div>
-    </a>`).join('');
     return`<div class="pred-card">
       <div class="pred-head">
         <span class="pred-title">${m.icon} ${m.label}</span>
@@ -1199,13 +1163,12 @@ function renderPrediction(signals,NEWS){
         <div class="pred-h"><div class="pred-h-lbl">Estimation 1 sem</div><div class="pred-h-val ${estCls}" style="font-size:10px;">${est1sem}</div></div>
       </div>
       <div class="pred-concl">${concl}</div>
-      ${alertHTML}${newsHTML}
-      <a href="${gUrl}" target="_blank" rel="noopener noreferrer" class="gnews-btn">↗ Toutes les actus ${m.label} (24h)</a>
+      ${alertHTML}
+      <a href="${gUrl}" target="_blank" rel="noopener noreferrer" class="gnews-btn">↗ Actualités ${m.label} du jour (24h)</a>
     </div>`;
   }).join('');
 
   document.getElementById('sec-prediction').innerHTML=`
-    ${sentHTML}
     <div class="pred-grid">${cards}</div>
     <div class="info-box" style="margin-top:.5rem;">⚠ Estimations probabilistes — pas des garanties. Toujours utiliser un stop-loss.</div>`;
 }
