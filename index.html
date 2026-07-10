@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.22</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.23</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -360,6 +360,7 @@ function fmtPrice(price,key){
   const isCrypto=['BTC','ETH','SOL','XRP'].includes(key);
   if(isCrypto&&price>1000)return(+price).toLocaleString('fr-FR',{maximumFractionDigits:0})+' $';
   if(isCrypto)return(+price).toFixed(4)+' $';
+  // Futures: afficher le prix brut avec 2 décimales
   return(+price).toFixed(2);
 }
 function nowStr(){return new Date().toLocaleString('fr-FR');}
@@ -523,7 +524,9 @@ const STOCKS_FH={
   'SAN.PA':{fh:'SAN',label:'Sanofi'},'BNP.PA':{fh:'BNP',label:'BNP Paribas'},'OR.PA':{fh:'OR',label:"L'Oréal"},
   // Matières premières agricoles & industrielles
   WEAT:{fh:'WEAT',label:'Blé'},CORN:{fh:'CORN',label:'Maïs'},DBA:{fh:'DBA',label:'Agri ETF'},
-  COPX:{fh:'COPX',label:'Cuivre/Mines'},JO:{fh:'JO',label:'Café'},SGG:{fh:'SGG',label:'Sucre'},
+  COPX:{fh:'COPX',label:'Cuivre/Mines'},
+  // Café et Sucre via futures ICE/CME sur Finnhub
+  JO:{fh:'KC1!',label:'Café'},SGG:{fh:'SB1!',label:'Sucre'},
   UNG:{fh:'UNG',label:'Gaz naturel'},ARKK:{fh:'ARKK',label:'ARK Innov.',radar:true},ITA:{fh:'ITA',label:'Défense',radar:true},
   ICLN:{fh:'ICLN',label:'Énergie propre',radar:true},XBI:{fh:'XBI',label:'Biotech',radar:true},HACK:{fh:'HACK',label:'Cybersécurité',radar:true},
   TQQQ:{fh:'TQQQ',label:'Nasdaq ×3',radar:true},SOXL:{fh:'SOXL',label:'Semis ×3',radar:true},UVXY:{fh:'UVXY',label:'Vol. VIX',radar:true},
@@ -597,20 +600,19 @@ async function fetchCrypto(){
 /* ── News : Newsdata FR + Finnhub EN en fallback ── */
 const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
 
-/* ── Fallback commodités via Yahoo Finance (JO, SGG, WEAT, UNG, COPX) ── */
+/* ── Fallback commodités via Yahoo Finance (futures + ETF) ── */
 async function fetchCommodityFallback(){
   const tickers={
-    JO:{yf:'JO',label:'Café'},
-    SGG:{yf:'SGG',label:'Sucre'},
-    WEAT:{yf:'WEAT',label:'Blé'},
-    UNG:{yf:'UNG',label:'Gaz naturel'},
-    COPX:{yf:'COPX',label:'Cuivre/Mines'},
+    JO:{yf:'KC=F',label:'Café'},        // Coffee C Futures (CBOT) - bien couvert
+    SGG:{yf:'SB=F',label:'Sucre'},      // Sugar No.11 Futures (ICE) - bien couvert
+    WEAT:{yf:'ZW=F',label:'Blé'},       // Wheat Futures (CBOT)
+    UNG:{yf:'NG=F',label:'Gaz naturel'},// Natural Gas Futures (NYMEX)
+    COPX:{yf:'HG=F',label:'Cuivre'},    // Copper Futures (COMEX)
   };
   await Promise.allSettled(Object.entries(tickers).map(async([k,{yf,label}])=>{
     if(DATA[k]?.ok)return;
     try{
-      // Yahoo Finance v8 - accepte CORS depuis navigateur
-      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1d&range=5d&_t=${Date.now()}`;
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yf)}?interval=1d&range=5d&_t=${Date.now()}`;
       const r=await fetchT(url,7000);if(!r.ok)return;
       const d=await r.json();
       const meta=d?.chart?.result?.[0]?.meta;
