@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.21</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.22</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -597,28 +597,28 @@ async function fetchCrypto(){
 /* ── News : Newsdata FR + Finnhub EN en fallback ── */
 const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
 
-/* ── Fallback commodités via Stooq (JO, SGG, WEAT, UNG, COPX) ── */
+/* ── Fallback commodités via Yahoo Finance (JO, SGG, WEAT, UNG, COPX) ── */
 async function fetchCommodityFallback(){
-  const map={
-    JO:{url:'https://stooq.com/q/l/?s=jo.us&f=sd2t2ohlcv&e=csv',label:'Café'},
-    SGG:{url:'https://stooq.com/q/l/?s=sgg.us&f=sd2t2ohlcv&e=csv',label:'Sucre'},
-    WEAT:{url:'https://stooq.com/q/l/?s=weat.us&f=sd2t2ohlcv&e=csv',label:'Blé'},
-    UNG:{url:'https://stooq.com/q/l/?s=ung.us&f=sd2t2ohlcv&e=csv',label:'Gaz naturel'},
-    COPX:{url:'https://stooq.com/q/l/?s=copx.us&f=sd2t2ohlcv&e=csv',label:'Cuivre/Mines'},
+  const tickers={
+    JO:{yf:'JO',label:'Café'},
+    SGG:{yf:'SGG',label:'Sucre'},
+    WEAT:{yf:'WEAT',label:'Blé'},
+    UNG:{yf:'UNG',label:'Gaz naturel'},
+    COPX:{yf:'COPX',label:'Cuivre/Mines'},
   };
-  await Promise.allSettled(Object.entries(map).map(async([k,{url,label}])=>{
+  await Promise.allSettled(Object.entries(tickers).map(async([k,{yf,label}])=>{
     if(DATA[k]?.ok)return;
     try{
-      const r=await fetchT(url,6000);if(!r.ok)return;
-      const txt=await r.text();
-      const lines=txt.trim().split('\n');
-      if(lines.length<2)return;
-      const cols=lines[1].split(',');
-      // Stooq CSV: Symbol,Date,Time,Open,High,Low,Close,Volume
-      const close=parseFloat(cols[6]),open=parseFloat(cols[3]);
-      if(!close||isNaN(close))return;
-      const pct=open?((close-open)/open)*100:null;
-      DATA[k]={label,price:close,prev:open,pct,ok:true,closes:[],source:'Stooq'};
+      // Yahoo Finance v8 - accepte CORS depuis navigateur
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1d&range=5d&_t=${Date.now()}`;
+      const r=await fetchT(url,7000);if(!r.ok)return;
+      const d=await r.json();
+      const meta=d?.chart?.result?.[0]?.meta;
+      if(!meta?.regularMarketPrice)return;
+      const price=meta.regularMarketPrice;
+      const prev=meta.previousClose||meta.chartPreviousClose;
+      const pct=prev?((price-prev)/prev)*100:null;
+      DATA[k]={label,price,prev,pct,ok:true,closes:[],source:'Yahoo'};
     }catch{}
   }));
 }
