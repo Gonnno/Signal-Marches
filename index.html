@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.24</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.27</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -600,26 +600,51 @@ async function fetchCrypto(){
 /* ── News : Newsdata FR + Finnhub EN en fallback ── */
 const ND=[112,117,98,95,54,53,100,56,99,56,99,48,52,99,97,54,52,48,55,56,57,57,56,57,102,52,54,51,54,100,97,100,48,100,100,48].map(c=>String.fromCharCode(c)).join('');
 
-/* ── Fallback commodités via cascade Finnhub ETF alternatifs ── */
-async function fetchCommodityFallback(){
-  // Cascade de tickers Finnhub pour chaque commodité agricole
-  // Finnhub free tier couvre les ETF US listés sur NYSE/NASDAQ
-  const cascades={
-    JO: {syms:['NIB','GRU','JJCOFF'],label:'Café'},
-    SGG:{syms:['CANE','JJSOF','SGG'],label:'Sucre'},
-    WEAT:{syms:['WEAT','WTIU','BAL'],label:'Blé'},
-    UNG:{syms:['UNG','BOIL','GASL'],label:'Gaz naturel'},
-    COPX:{syms:['COPX','CPER','JJC'],label:'Cuivre'},
-  };
-  await Promise.allSettled(Object.entries(cascades).map(async([k,{syms,label}])=>{
+/* ── Clés commodités ── */
+const AV=[65,72,50,69,74,71,52,80,51,70,86,49,72,76,50,82].map(c=>String.fromCharCode(c)).join('');
+const TD=[55,56,56,97,52,102,56,54,55,98,102,55,52,98,97,56,57,98,49,102,99,98,52,56,101,50,49,101,52,99,98,102].map(c=>String.fromCharCode(c)).join('');
+
+/* ── Café et Sucre — cascade AV → TD → Finnhub ETF ── */
+async function fetchCommodities(){
+  const targets=[
+    {k:'JO', label:'Café',  avSym:'KC1!', tdSym:'KC1!', fh:['NIB','DBA']},
+    {k:'SGG',label:'Sucre', avSym:'SB1!', tdSym:'SB1!', fh:['CANE','DBA']},
+  ];
+  await Promise.allSettled(targets.map(async({k,label,avSym,tdSym,fh})=>{
     if(DATA[k]?.ok)return;
-    for(const sym of syms){
+    // 1. Alpha Vantage
+    if(AV){
+      try{
+        const r=await fetchT(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${avSym}&apikey=${AV}&_t=${Date.now()}`,7000);
+        if(r.ok){
+          const d=await r.json();const q=d['Global Quote'];
+          if(q?.['05. price']){
+            const price=+q['05. price'],prev=+q['08. previous close'];
+            DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes:[],source:'AlphaVantage'};
+            return;
+          }
+        }
+      }catch{}
+    }
+    // 2. Twelve Data
+    if(TD){
+      try{
+        const r=await fetchT(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tdSym)}&apikey=${TD}&_t=${Date.now()}`,7000);
+        if(r.ok){
+          const d=await r.json();
+          if(d.close&&!d.code){
+            const price=+d.close,prev=+d.previous_close||null;
+            DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes:[],source:'TwelveData'};
+            return;
+          }
+        }
+      }catch{}
+    }
+    // 3. Finnhub ETF fallback
+    for(const sym of fh){
       try{
         const q=await fhQuote(sym);
-        if(q&&q.price>0&&q.price<1e6){
-          DATA[k]={label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:`FH:${sym}`};
-          return;
-        }
+        if(q?.price>0){DATA[k]={label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:`FH:${sym}`};return;}
       }catch{}
     }
   }));
@@ -944,7 +969,8 @@ async function analyserTout(){
       fetchStocks(h,meta).catch(()=>{}),
       fetchCrypto().catch(()=>{}),
     ]);
-    // Fallback commodités pour JO/SGG/WEAT/UNG/COPX si Finnhub échoue
+    // Café et Sucre — cascade Alpha Vantage → Twelve Data → Finnhub ETF
+    await fetchCommodities().catch(()=>{});
     await fetchCommodityFallback().catch(()=>{});
 
     await step(55,'Historique 60j — crypto…');
