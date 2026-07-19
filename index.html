@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.28</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.29</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -610,44 +610,70 @@ async function fetchCommodities(){
     {k:'JO', label:'Café',  avSym:'KC1!', tdSym:'KC1!', fh:['NIB','DBA']},
     {k:'SGG',label:'Sucre', avSym:'SB1!', tdSym:'SB1!', fh:['CANE','DBA']},
   ];
+  const h=loadHist();
+
   await Promise.allSettled(targets.map(async({k,label,avSym,tdSym,fh})=>{
     if(DATA[k]?.ok)return;
-    // 1. Alpha Vantage
+
+    // 1. Alpha Vantage — TIME_SERIES_DAILY pour avoir l'historique + prix
     if(AV){
       try{
-        const r=await fetchT(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${avSym}&apikey=${AV}&_t=${Date.now()}`,7000);
-        if(r.ok){
-          const d=await r.json();const q=d['Global Quote'];
-          if(q?.['05. price']){
-            const price=+q['05. price'],prev=+q['08. previous close'];
-            DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes:[],source:'AlphaVantage'};
-            return;
-          }
-        }
-      }catch{}
-    }
-    // 2. Twelve Data
-    if(TD){
-      try{
-        const r=await fetchT(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tdSym)}&apikey=${TD}&_t=${Date.now()}`,7000);
+        const r=await fetchT(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${avSym}&outputsize=compact&apikey=${AV}&_t=${Date.now()}`,8000);
         if(r.ok){
           const d=await r.json();
-          if(d.close&&!d.code){
-            const price=+d.close,prev=+d.previous_close||null;
-            DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes:[],source:'TwelveData'};
+          const ts=d['Time Series (Daily)'];
+          if(ts){
+            const dates=Object.keys(ts).sort((a,b)=>b.localeCompare(a));
+            const price=+ts[dates[0]]?.['4. close'];
+            const prev=dates[1]?+ts[dates[1]]?.['4. close']:null;
+            if(price>0){
+              // Construire closes depuis l'historique AV (20 derniers jours)
+              const closes=dates.slice(0,20).reverse().map(d=>+ts[d]?.['4. close']).filter(v=>v>0);
+              DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes,source:'AlphaVantage'};
+              // Sauvegarder dans l'historique local
+              if(!h[k])h[k]=[];
+              closes.forEach((c,i)=>{
+                const date=dates[dates.length-1-i];
+                if(date&&!h[k].find(e=>e.d===date))h[k].push({d:date,c});
+              });
+              h[k]=h[k].sort((a,b)=>a.d.localeCompare(b.d)).slice(-60);
+              return;
+            }
+          }
+        }
+      }catch{}
+    }
+
+    // 2. Twelve Data — time_series pour historique
+    if(TD){
+      try{
+        const r=await fetchT(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(tdSym)}&interval=1day&outputsize=20&apikey=${TD}&_t=${Date.now()}`,8000);
+        if(r.ok){
+          const d=await r.json();
+          if(d.values?.length&&!d.code){
+            const vals=d.values; // déjà trié desc
+            const price=+vals[0].close,prev=vals[1]?+vals[1].close:null;
+            const closes=vals.slice(0,20).reverse().map(v=>+v.close).filter(v=>v>0);
+            DATA[k]={label,price,prev,pct:prev?((price-prev)/prev)*100:null,ok:true,closes,source:'TwelveData'};
             return;
           }
         }
       }catch{}
     }
-    // 3. Finnhub ETF fallback
+
+    // 3. Finnhub ETF fallback (pas d'historique)
     for(const sym of fh){
       try{
         const q=await fhQuote(sym);
-        if(q?.price>0){DATA[k]={label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:[],source:`FH:${sym}`};return;}
+        if(q?.price>0){
+          DATA[k]={label,price:q.price,prev:q.prev,pct:q.pct,ok:true,closes:h[k]?.map(e=>e.c)||[],source:`FH:${sym}`};
+          return;
+        }
       }catch{}
     }
   }));
+
+  saveHist(h);
 }
 
 async function fetchNewsND(){
