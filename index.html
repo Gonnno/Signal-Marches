@@ -238,7 +238,7 @@ a{color:inherit;text-decoration:none;}
     <div class="topbar">
       <div class="topbar-inner">
       <div class="topbar-left">
-        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.34</span></span>
+        <span class="topbar-brand">Signal Marchés <span id="ver-label" style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--tx3);">v3.36</span></span>
         <span class="topbar-sep">·</span>
         <button class="tb-nav-item active" id="tb-global" onclick="gotoPage('global')">🌐 Marchés</button>
         <button class="tb-nav-item" id="tb-prediction" onclick="gotoPage('prediction')">🔮 Prédiction</button>
@@ -541,7 +541,12 @@ async function fetchStocks(h,meta){
     await fetchCandles(STOCKS_FH[k].fh,k,h,meta);
   }
   // 3. Push today's quote into history and get closes array
-  keys.forEach(k=>{DATA[k].closes=pushAndGet(h,k,DATA[k].price,DATA[k].prev);});
+  // JO et SGG sont gérés par fetchCommodities (avec TD/AV qui donnent l'historique complet)
+  const commodityKeys=new Set(['JO','SGG']);
+  keys.forEach(k=>{
+    if(commodityKeys.has(k))return;
+    DATA[k].closes=pushAndGet(h,k,DATA[k].price,DATA[k].prev);
+  });
 }
 
 async function fetchCrypto(){
@@ -579,14 +584,14 @@ const TD=[55,56,56,97,52,102,56,54,55,98,102,55,52,98,97,56,57,98,49,102,99,98,5
 /* ── Café et Sucre — cascade AV → TD → Finnhub ETF ── */
 async function fetchCommodities(){
   const targets=[
-    {k:'JO', label:'Café',  avFn:'COFFEE', tdSym:'KC1!', tdEx:'', fh:['NIB','DBA']},
-    {k:'SGG',label:'Sucre', avFn:'SUGAR',  tdSym:'SB1!', tdEx:'', fh:['CANE','DBA']},
+    {k:'JO', label:'Café',  avFn:'COFFEE', tdSym:'COFFEE', tdEx:'', fh:['NIB','DBA']},
+    {k:'SGG',label:'Sucre', avFn:'SUGAR',  tdSym:'SUGAR',  tdEx:'', fh:['CANE','DBA']},
   ];
   const h=loadHist();
 
   await Promise.allSettled(targets.map(async({k,label,avFn,tdSym,tdEx,fh})=>{
-    // Ne pas skipper si on a le prix mais pas l'historique
-    if(DATA[k]?.ok&&DATA[k]?.closes?.length>=5)return;
+    // Toujours tenter TD pour avoir l'historique complet, même si on a déjà le prix
+    // (AV donne le prix mais pas l'historique journalier)
 
     // 1. Twelve Data — prioritaire pour l'historique journalier
     if(TD){
